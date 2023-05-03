@@ -728,5 +728,5 @@ backends = [
 
 
 
-analysis("/home/tim/Documents/UvA/Thesis/code/database", model_name=models[0], detector_backend=backends[0])
+analysis("database", model_name=models[0], detector_backend=backends[0])
 
