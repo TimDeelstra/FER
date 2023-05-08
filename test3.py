@@ -60,7 +60,7 @@ backends = [
   'mediapipe'
 ]
 
-objs = DeepFace.stream("/home/tim/Documents/UvA/Thesis/code/database", model_name=models[2], detector_backend=backends[3]) 
+objs = DeepFace.stream("database", model_name=models[0], detector_backend=backends[0]) 
 
 # while True:
 
