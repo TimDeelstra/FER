@@ -9,6 +9,7 @@ from face_detection import RetinaFace
 
 # Decent performance, showing decent fear/sad/surprise correlation. Might be useful as positive/negative emotion classifier.
 # About 12ms for ryzen laptop.
+# 9ms for katana.
 
 
 classifier = load_model("./models/model_filter.h5")
@@ -44,7 +45,8 @@ def face_detector(face, img):
         return (x_min,bbox_width,y_min,bbox_height), np.zeros((48,48), np.uint8), img
     return (x_min,bbox_width,y_min,bbox_height), roi_gray, img
 
-cap = cv2.VideoCapture(0)
+#cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture("../../Downloads/Proefpersoon51014_Sessie1.MP4")
 
 while True:
 

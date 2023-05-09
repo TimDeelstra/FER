@@ -64,7 +64,7 @@ def analysis(
     face_detected = False
     face_included_frames = 0  # freeze screen if face detected sequantially 5 frames
     freezed_frame = 0
-    tic = time.time()
+    start = time.time()
 
     source = dir + "/" + file
 
@@ -75,8 +75,8 @@ def analysis(
     fps = cap.get(cv2.CAP_PROP_FPS)
     print("FPS:" + str(fps) + "\n\n")
 
-    rtplayback = False
-    render = False
+    rtplayback = True
+    render = True
 
     framewaittime = 1
     if(rtplayback):
@@ -91,7 +91,7 @@ def analysis(
     else:
         # Create data directory
         path = os.getcwd() + "/data"
-        filename = file.split("/")[-1] + "." + detector_backend + ".csv"
+        filename = file.split("/")[-1] + "." + model_name + "." + detector_backend + ".2.csv"
         try:
             for d in file.split("/"):
                 os.mkdir(path)
@@ -111,6 +111,8 @@ def analysis(
             print ("Unexpected error:", sys.exc_info()[0])
 
     while(cap.isOpened()):
+        print("fps: " + str(1/(time.time()-start)))
+        start = time.time()
         _, img = cap.read()
 
         if img is None:
@@ -163,7 +165,7 @@ def analysis(
         detected_faces = []
         face_index = 0
         for x, y, w, h in faces:
-            if w > 90:  # discard small detected faces
+            if w > 120:  # discard small detected faces
 
                 face_detected = True
                 if face_index == 0:
@@ -488,13 +490,16 @@ def analysis(
             freezed_frame = 0
 
         elif(render):
+            writer.writerow([0,0,0,0, 0, 0, 0, 0, 0, 0, 0, "None"])
 
             cv2.imshow("img", img)
             # if val != 'eof' and audio_frame is not None:
             #     #audio
             #     img, t = audio_frame
-
-        if cv2.waitKey(int(framewaittime)) & 0xFF == ord("q"):  # press q to quit
+        waitTime = int(framewaittime)- int(1000*(time.time()-start) + 0.5)
+        if waitTime < 1:
+            waitTime = 1
+        if cv2.waitKey(waitTime) & 0xFF == ord("q"):  # press q to quit
             f.close()
             break
 
@@ -532,5 +537,6 @@ backends = [
 
 
 
-analysis("database", "../..", "Downloads/Proefpersoon51014_Sessie1.MP4", model_name=models[2], detector_backend=backends[0])
+analysis("database", "../..", "Downloads/Proefpersoon51014_Sessie1.MP4", model_name=models[0], detector_backend=backends[0])
+#grayscale improve speed by 10%-ish
 
