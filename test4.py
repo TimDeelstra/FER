@@ -75,7 +75,7 @@ def analysis(
     fps = cap.get(cv2.CAP_PROP_FPS)
     print("FPS:" + str(fps) + "\n\n")
 
-    rtplayback = True
+    rtplayback = False
     render = True
 
     framewaittime = 1
@@ -91,7 +91,7 @@ def analysis(
     else:
         # Create data directory
         path = os.getcwd() + "/data"
-    filename = file.split("/")[-1] + "." + model_name + "." + detector_backend + ".csv"
+        filename = file.split("/")[-1] + "." + model_name + "." + detector_backend + ".csv"
         try:
             for d in file.split("/"):
                 os.mkdir(path)
@@ -118,7 +118,7 @@ def analysis(
         if img is None:
             break
 
-        print(str(100*cap.get(cv2.CAP_PROP_POS_FRAMES)/cap.get(cv2.CAP_PROP_FRAME_COUNT)) + "%% completed      ", end="\r")
+        print(str(100*cap.get(cv2.CAP_PROP_POS_FRAMES)/cap.get(cv2.CAP_PROP_FRAME_COUNT)) + "%% completed      ", end="\n")
         #audio_frame, val = player.get_frame()
 
         # cv2.namedWindow('img', cv2.WINDOW_FREERATIO)
@@ -132,11 +132,15 @@ def analysis(
 
         try:
             data = next(reader)
+            print(data)
+            print("frame found:" + str(cap.get(cv2.CAP_PROP_POS_FRAMES)) + "\n")
             x, y, w, h, angry, disgust, fear, happy, sad, surprise, neutral, dominant = data
             faces = [[int(x), int(y), int(w), int(h)]]
-            fromStorage = True
-        except:
+            fromStorage = True   
+            print("frame loaded successfully")        
+        except StopIteration:
             try:
+                #start = time.time()
                 # just extract the regions to highlight in webcam
                 face_objs = DeepFace.extract_faces(
                     img_path=img,
@@ -145,6 +149,7 @@ def analysis(
                     enforce_detection=False,
                     #grayscale=True,
                 )
+                # print(time.time()-start)
                 faces = []
                 for face_obj in face_objs:
                     facial_area = face_obj["facial_area"]
@@ -364,112 +369,6 @@ def analysis(
                                                     cv2.FILLED,
                                                 )
 
-                                if enable_age_gender:
-                                    apparent_age = demography["age"]
-                                    dominant_gender = demography["dominant_gender"]
-                                    gender = "M" if dominant_gender == "Man" else "W"
-                                    # print(f"{apparent_age} years old {dominant_emotion}")
-                                    analysis_report = str(int(apparent_age)) + " " + gender
-
-                                    # -------------------------------
-
-                                    info_box_color = (46, 200, 255)
-
-                                    # top
-                                    if y - pivot_img_size + int(pivot_img_size / 5) > 0:
-
-                                        triangle_coordinates = np.array(
-                                            [
-                                                (x + int(w / 2), y),
-                                                (
-                                                    x + int(w / 2) - int(w / 10),
-                                                    y - int(pivot_img_size / 3),
-                                                ),
-                                                (
-                                                    x + int(w / 2) + int(w / 10),
-                                                    y - int(pivot_img_size / 3),
-                                                ),
-                                            ]
-                                        )
-
-                                        cv2.drawContours(
-                                            freeze_img,
-                                            [triangle_coordinates],
-                                            0,
-                                            info_box_color,
-                                            -1,
-                                        )
-
-                                        cv2.rectangle(
-                                            freeze_img,
-                                            (
-                                                x + int(w / 5),
-                                                y - pivot_img_size + int(pivot_img_size / 5),
-                                            ),
-                                            (x + w - int(w / 5), y - int(pivot_img_size / 3)),
-                                            info_box_color,
-                                            cv2.FILLED,
-                                        )
-
-                                        cv2.putText(
-                                            freeze_img,
-                                            analysis_report,
-                                            (x + int(w / 3.5), y - int(pivot_img_size / 2.1)),
-                                            cv2.FONT_HERSHEY_SIMPLEX,
-                                            1,
-                                            (0, 111, 255),
-                                            2,
-                                        )
-
-                                    # bottom
-                                    elif (
-                                        y + h + pivot_img_size - int(pivot_img_size / 5)
-                                        < resolution_y
-                                    ):
-
-                                        triangle_coordinates = np.array(
-                                            [
-                                                (x + int(w / 2), y + h),
-                                                (
-                                                    x + int(w / 2) - int(w / 10),
-                                                    y + h + int(pivot_img_size / 3),
-                                                ),
-                                                (
-                                                    x + int(w / 2) + int(w / 10),
-                                                    y + h + int(pivot_img_size / 3),
-                                                ),
-                                            ]
-                                        )
-
-                                        cv2.drawContours(
-                                            freeze_img,
-                                            [triangle_coordinates],
-                                            0,
-                                            info_box_color,
-                                            -1,
-                                        )
-
-                                        cv2.rectangle(
-                                            freeze_img,
-                                            (x + int(w / 5), y + h + int(pivot_img_size / 3)),
-                                            (
-                                                x + w - int(w / 5),
-                                                y + h + pivot_img_size - int(pivot_img_size / 5),
-                                            ),
-                                            info_box_color,
-                                            cv2.FILLED,
-                                        )
-
-                                        cv2.putText(
-                                            freeze_img,
-                                            analysis_report,
-                                            (x + int(w / 3.5), y + h + int(pivot_img_size / 1.5)),
-                                            cv2.FONT_HERSHEY_SIMPLEX,
-                                            1,
-                                            (0, 111, 255),
-                                            2,
-                                        )
-
 
             #cv2.rectangle(freeze_img, (10, 10), (90, 50), (67, 67, 67), -10)
             if(render):
@@ -480,22 +379,21 @@ def analysis(
             #     img, t = audio_frame
 
 
-            if(not(face_detected)):
-                writer.writerow([0,0,0,0, 0, 0, 0, 0, 0, 0, 0, "None"])
-
-
-            face_detected = False
-            face_included_frames = 0
-            freeze = False
-            freezed_frame = 0
-
         elif(render):
-            writer.writerow([0,0,0,0, 0, 0, 0, 0, 0, 0, 0, "None"])
 
             cv2.imshow("img", img)
             # if val != 'eof' and audio_frame is not None:
             #     #audio
             #     img, t = audio_frame
+
+        if(not(face_detected) and not(fromStorage)):
+                writer.writerow([0,0,0,0, 0, 0, 0, 0, 0, 0, 0, "None"])
+
+        face_detected = False
+        face_included_frames = 0
+        freeze = False
+        freezed_frame = 0
+
         waitTime = int(framewaittime)- int(1000*(time.time()-start) + 0.5)
         if waitTime < 1:
             waitTime = 1
@@ -537,6 +435,6 @@ backends = [
 
 
 
-analysis("database", "../..", "Downloads/Proefpersoon51014_Sessie1.MP4", model_name=models[0], detector_backend=backends[0])
+analysis("database", "../..", "Downloads/Proefpersoon51014_Sessie1.MP4", model_name=models[0], detector_backend=backends[4])
 #grayscale improve speed by 10%-ish
 
