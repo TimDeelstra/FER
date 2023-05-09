@@ -143,7 +143,7 @@ def analysis(
                     target_size=target_size,
                     detector_backend=detector_backend,
                     enforce_detection=False,
-                    #grayscale=True,
+                    grayscale=True,
                 )
                 faces = []
                 for face_obj in face_objs:
