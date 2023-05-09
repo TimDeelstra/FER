@@ -40,7 +40,7 @@ class_labels = {0: 'Angry', 1: 'Disgust', 2: 'Fear', 3: 'Happy', 4: 'Sad', 5: 'S
 # class_labels = {v: k for k, v in class_labels.items()}
 # classes = list(class_labels.values())
 
-detector = RetinaFace()
+detector = RetinaFace(gpu_id=0)
 
 offset = 4
 

@@ -91,7 +91,7 @@ def analysis(
     else:
         # Create data directory
         path = os.getcwd() + "/data"
-        filename = file.split("/")[-1] + "." + model_name + "." + detector_backend + ".2.csv"
+    filename = file.split("/")[-1] + "." + model_name + "." + detector_backend + ".csv"
         try:
             for d in file.split("/"):
                 os.mkdir(path)
@@ -143,7 +143,7 @@ def analysis(
                     target_size=target_size,
                     detector_backend=detector_backend,
                     enforce_detection=False,
-                    grayscale=True,
+                    #grayscale=True,
                 )
                 faces = []
                 for face_obj in face_objs:
