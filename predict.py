@@ -76,7 +76,7 @@ def analysis(
     print("FPS:" + str(fps) + "\n\n")
 
     rtplayback = False
-    render = False
+    render = True
 
     framewaittime = 1
     if(rtplayback):
@@ -115,6 +115,8 @@ def analysis(
         start = time.time()
         _, img = cap.read()
 
+        print(time.time()-start)
+
         if img is None:
             break
 
@@ -136,23 +138,26 @@ def analysis(
             print("frame found:" + str(cap.get(cv2.CAP_PROP_POS_FRAMES)) + "\n")
             x, y, w, h, angry, disgust, fear, happy, sad, surprise, neutral, dominant = data
             faces = [[int(x), int(y), int(w), int(h)]]
+            demographies = [{'emotion': {'angry': float(angry), 'disgust': float(disgust), 'fear': float(fear), 'happy': float(happy), 'sad': float(sad), 'surprise': float(surprise), 'neutral': float(neutral)}, 'dominant_emotion': dominant, 'region': {'x': x, 'y': y, 'w': w, 'h': h}}]
             fromStorage = True   
             print("frame loaded successfully")        
         except StopIteration:
             try:
                 #start = time.time()
                 # just extract the regions to highlight in webcam
-                face_objs = DeepFace.extract_faces(
-                    img_path=img,
-                    target_size=target_size,
-                    detector_backend=detector_backend,
-                    enforce_detection=False,
-                    #grayscale=True,
-                )
+                #gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+                demographies = DeepFace.analyze(
+                                img_path=img,
+                                detector_backend=detector_backend,
+                                enforce_detection=False,
+                                silent=True,
+                                actions="emotion",
+                                align=True
+                            )
                 # print(time.time()-start)
                 faces = []
-                for face_obj in face_objs:
-                    facial_area = face_obj["facial_area"]
+                for demography in demographies:
+                    facial_area = demography["region"]
                     faces.append(
                         (
                             facial_area["x"],
@@ -163,14 +168,17 @@ def analysis(
                     )
             except:  # to avoid exception if no face detected
                 faces = []
+                demographies = []
 
             if len(faces) == 0:
                 face_included_frames = 0
 
         detected_faces = []
         face_index = 0
+    
+        print(time.time()-start)
         for x, y, w, h in faces:
-            if w > 120:  # discard small detected faces
+            if w > 90:  # discard small detected faces
 
                 face_detected = True
                 if face_index == 0:
@@ -178,20 +186,20 @@ def analysis(
                         face_included_frames + 1
                     )  # increase frame for a single face
 
-                if(render):
-                    cv2.rectangle(
-                        img, (x, y), (x + w, y + h), (67, 67, 67), 1
-                    )  # draw rectangle to main image
+                # if(render):
+                #     cv2.rectangle(
+                #         img, (x, y), (x + w, y + h), (67, 67, 67), 1
+                #     )  # draw rectangle to main image
 
-                    cv2.putText(
-                        img,
-                        str(frame_threshold - face_included_frames),
-                        (int(x + w / 4), int(y + h / 1.5)),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        4,
-                        (255, 255, 255),
-                        2,
-                    )
+                #     cv2.putText(
+                #         img,
+                #         str(frame_threshold - face_included_frames),
+                #         (int(x + w / 4), int(y + h / 1.5)),
+                #         cv2.FONT_HERSHEY_SIMPLEX,
+                #         4,
+                #         (255, 255, 255),
+                #         2,
+                #     )
 
                 detected_face = img[int(y) : int(y + h), int(x) : int(x + w)]  # crop detected face
 
@@ -207,7 +215,6 @@ def analysis(
             # base_img = img.copy()
             base_img = raw_img.copy()
             detected_faces_final = detected_faces.copy()
-            tic = time.time()
 
         if freeze == True:
 
@@ -230,24 +237,11 @@ def analysis(
 
                     # -------------------------------
                     # extract detected face
-                    custom_face = base_img[y : y + h, x : x + w]
+                    # custom_face = base_img[y : y + h, x : x + w]
                     # -------------------------------
                     # facial attribute analysis
 
                     if enable_face_analysis == True:
-
-                        if fromStorage:
-                            demographies = [{'emotion': {'angry': float(angry), 'disgust': float(disgust), 'fear': float(fear), 'happy': float(happy), 'sad': float(sad), 'surprise': float(surprise), 'neutral': float(neutral)}, 'dominant_emotion': dominant, 'region': {'x': x, 'y': y, 'w': w, 'h': h}}]
-
-                        else:        
-                            demographies = DeepFace.analyze(
-                                img_path=custom_face,
-                                detector_backend=detector_backend,
-                                enforce_detection=False,
-                                silent=True,
-                                actions="emotion",
-                                align=True
-                            )
 
                         if len(demographies) > 0:
                             # directly access 1st face cos img is extracted already
@@ -369,7 +363,6 @@ def analysis(
                                                     cv2.FILLED,
                                                 )
 
-
             #cv2.rectangle(freeze_img, (10, 10), (90, 50), (67, 67, 67), -10)
             if(render):
                 cv2.imshow("img", freeze_img)
@@ -377,7 +370,6 @@ def analysis(
             # if val != 'eof' and audio_frame is not None:
             #     #audio
             #     img, t = audio_frame
-
 
         elif(render):
 
@@ -435,6 +427,6 @@ backends = [
 
 
 
-analysis("database", "../..", "Downloads/Proefpersoon51014_Sessie1.MP4", model_name=models[0], detector_backend=backends[4])
+analysis("database", "../..", "Downloads/Proefpersoon51014_Sessie1.MP4", model_name=models[0], detector_backend=backends[0])
 #grayscale improve speed by 10%-ish
 
