@@ -76,7 +76,7 @@ def analysis(
     print("FPS:" + str(fps) + "\n\n")
 
     rtplayback = False
-    render = True
+    render = False
 
     framewaittime = 1
     if(rtplayback):
@@ -132,7 +132,7 @@ def analysis(
 
         try:
             data = next(reader)
-            print(data)
+            #print(data)
             print("frame found:" + str(cap.get(cv2.CAP_PROP_POS_FRAMES)) + "\n")
             x, y, w, h, angry, disgust, fear, happy, sad, surprise, neutral, dominant = data
             faces = [[int(x), int(y), int(w), int(h)]]
