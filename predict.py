@@ -6,7 +6,7 @@ import cv2
 from deepface import DeepFace
 from deepface.commons import functions
 import csv
-import sys
+import sys, getopt
 #from ffpyplayer.player import MediaPlayer
 
 # dependency configuration
@@ -50,14 +50,14 @@ def analysis(
         print("Emotion model is just built")
     # -----------------------
     # call a dummy find function for db_path once to create embeddings in the initialization
-    DeepFace.find(
-        img_path=np.zeros([target_size[0], target_size[1], 3]),
-        db_path=db_path,
-        model_name=model_name,
-        detector_backend=detector_backend,
-        distance_metric=distance_metric,
-        enforce_detection=False,
-    )
+    # DeepFace.find(
+    #     img_path=np.zeros([target_size[0], target_size[1], 3]),
+    #     db_path=db_path,
+    #     model_name=model_name,
+    #     detector_backend=detector_backend,
+    #     distance_metric=distance_metric,
+    #     enforce_detection=False,
+    # )
     # -----------------------
     # visualization
     freeze = False
@@ -146,14 +146,16 @@ def analysis(
                 #start = time.time()
                 # just extract the regions to highlight in webcam
                 #gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-                demographies = DeepFace.analyze(
-                                img_path=img,
-                                detector_backend=detector_backend,
-                                enforce_detection=False,
-                                silent=True,
-                                actions="emotion",
-                                align=True
-                            )
+                demographies = []
+                if(model_name == "VGG-Face"):
+                    demographies = DeepFace.analyze(
+                                    img_path=img,
+                                    detector_backend=detector_backend,
+                                    enforce_detection=False,
+                                    silent=True,
+                                    actions="emotion",
+                                    align=True
+                                )
                 # print(time.time()-start)
                 faces = []
                 for demography in demographies:
@@ -185,21 +187,6 @@ def analysis(
                     face_included_frames = (
                         face_included_frames + 1
                     )  # increase frame for a single face
-
-                # if(render):
-                #     cv2.rectangle(
-                #         img, (x, y), (x + w, y + h), (67, 67, 67), 1
-                #     )  # draw rectangle to main image
-
-                #     cv2.putText(
-                #         img,
-                #         str(frame_threshold - face_included_frames),
-                #         (int(x + w / 4), int(y + h / 1.5)),
-                #         cv2.FONT_HERSHEY_SIMPLEX,
-                #         4,
-                #         (255, 255, 255),
-                #         2,
-                #     )
 
                 detected_face = img[int(y) : int(y + h), int(x) : int(x + w)]  # crop detected face
 
@@ -399,15 +386,7 @@ def analysis(
 
 
 models = [
-  "VGG-Face", 
-  "Facenet", 
-  "Facenet512", 
-  "OpenFace", 
-  "DeepFace", 
-  "DeepID", 
-  "ArcFace", 
-  "Dlib", 
-  "SFace",
+  "VGG-Face"
 ]
 
 backends = [
@@ -427,6 +406,32 @@ backends = [
 
 
 
-analysis("database", "../..", "Downloads/Proefpersoon51014_Sessie1.MP4", model_name=models[0], detector_backend=backends[0])
-#grayscale improve speed by 10%-ish
 
+
+if __name__ == "__main__":
+
+    inputfile = ''
+    inputdir = ''
+    model_int = 0
+    backend_int = 0
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:],"hf:",["file=", "model=", "backend="])
+    except getopt.GetoptError:
+        print ('test.py -d <maindir> -f <videofile> -m <model_number> -b <backend_number>')
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print ('test.py -d <maindir> -f <videofile> -m <model_number> -b <backend_number>')
+            sys.exit()
+        elif opt in ("-f", "--file"):
+            inputfile = arg
+        elif opt in ("-d", "--dir"):
+            inputdir = arg
+        elif opt in ("-m", "--model"):
+            model_int = arg
+        elif opt in ("-b", "--backend"):
+            backend_int = arg
+
+    analysis("database", inputdir, inputfile, model_name=models[model_int], detector_backend=backends[backend_int])
+    #grayscale improve speed by 10%-ish
