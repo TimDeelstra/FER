@@ -425,9 +425,9 @@ if __name__ == "__main__":
         elif opt in ("-d", "--dir"):
             inputdir = arg
         elif opt in ("-m", "--model"):
-            model_int = arg
+            model_int = int(arg)
         elif opt in ("-b", "--backend"):
-            backend_int = arg
+            backend_int = int(arg)
 
     analysis("database", inputdir, inputfile, model_name=models[model_int], detector_backend=backends[backend_int])
     #grayscale improve speed by 10%-ish
