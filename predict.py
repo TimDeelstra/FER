@@ -427,6 +427,6 @@ backends = [
 
 
 
-analysis("database", "../..", "Downloads/Proefpersoon51014_Sessie1.MP4", model_name=models[0], detector_backend=backends[0])
+analysis("database", "../..", "Downloads/Proefpersoon11001_sessie1.MP4", model_name=models[0], detector_backend=backends[0])
 #grayscale improve speed by 10%-ish
 

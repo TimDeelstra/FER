@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 class BaseConfig():
-    DIR_IMG = '../../_DATA/crops_aligned/crops_aligned'
-    DIR_ANN_TRAIN = '../../_DATA/annotations/EXPR_Classification_Challenge/Train_Set'
-    DIR_ANN_DEV = '../../_DATA/annotations/EXPR_Classification_Challenge/Validation_Set'
+    DIR_IMG = '../../db/FER2013Test'
+    DIR_ANN_TRAIN = '../../db/FER2013Train'
+    DIR_ANN_DEV = '../../db/FER2013Valid'
     # index to class mapping
     index2class = {
             0: 'neutral',
