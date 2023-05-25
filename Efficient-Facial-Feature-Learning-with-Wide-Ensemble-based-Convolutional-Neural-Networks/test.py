@@ -12,7 +12,7 @@ start = time.time()
 
 
 while(uimage.is_video_capture_open()):
-    print("fps: " + str(1/(time.time()-start)))
+    # print("fps: " + str(1/(time.time()-start)))
     start = time.time()
 
     img, timestap = uimage.get_frame()
@@ -22,4 +22,5 @@ while(uimage.is_video_capture_open()):
 
     fer = cvision.recognize_facial_expression(img, 0, face_detection_method=3, grad_cam=False)
 
-    print(fer.list_emotion)
+    if(fer.list_emotion is not None and fer.list_emotion[0:-1].count('Surprise') > 4):
+        print(f"Surprise detected at ", int(timestap/60), ":", timestap%60, sep="")
