@@ -59,85 +59,88 @@ def main(base_folder, fer_path, ferplus_path,augments):
         for row in islice(fer_rows, 1, None):
             ferplus_row = ferplus_entries[index]
             # file_name = str(index).strip()
-            file_name = ferplus_row[12].strip() + '_' + ferplus_row[1].strip()
-            if len(ferplus_row[1].strip()) > 0 and int(ferplus_row[12].strip()) != 9 and int(
-                    ferplus_row[12].strip()) != 10:
+            emotion = ferplus_row[2:9].index(max(ferplus_row[2:9]))
+            print(emotion)
+            ferplus_row[11] = str(emotion)
+            file_name = ferplus_row[11].strip() + '_' + ferplus_row[1].strip()
+            if len(ferplus_row[1].strip()) > 0 and int(ferplus_row[11].strip()) != 9 and int(
+                    ferplus_row[11].strip()) != 10:
                 image = str_to_image(row[1])
                 image_path = os.path.join(base_folder, folder_names[row[2]], file_name)
                 cv2.imwrite(image_path,image)
                 augimg_path = os.path.join(base_folder, folder_names[row[2]])
                 if augments==1 and row[2]=='Training':
                     aug_img = albumentations(image)
-                    cv2.imwrite(augimg_path+'/'+ferplus_row[12].strip() + '_augment-ud_' + ferplus_row[1].strip(), np.flipud(aug_img))
-                    cv2.imwrite(augimg_path+'/'+ferplus_row[12].strip() + '_augment-lr_' + ferplus_row[1].strip(), np.fliplr(aug_img))
+                    cv2.imwrite(augimg_path+'/'+ferplus_row[11].strip() + '_augment-ud_' + ferplus_row[1].strip(), np.flipud(aug_img))
+                    cv2.imwrite(augimg_path+'/'+ferplus_row[11].strip() + '_augment-lr_' + ferplus_row[1].strip(), np.fliplr(aug_img))
                     augment.augment_hsv(aug_img)
-                    cv2.imwrite(augimg_path+'/'+ferplus_row[12].strip() + '_augment-hsv-per_' + ferplus_row[1].strip(), augment.random_perspective(aug_img))
-                    cv2.imwrite(augimg_path+'/'+ferplus_row[12].strip() + '_augment-hsv-ud_' + ferplus_row[1].strip(), np.flipud(aug_img))
-                    cv2.imwrite(augimg_path+'/'+ferplus_row[12].strip() + '_augment-hsv_' + ferplus_row[1].strip(), aug_img)
-                    cv2.imwrite(augimg_path+'/'+ferplus_row[12].strip() + '_augment-hsv-lr_' + ferplus_row[1].strip(), np.fliplr(aug_img))
+                    cv2.imwrite(augimg_path+'/'+ferplus_row[11].strip() + '_augment-hsv-per_' + ferplus_row[1].strip(), augment.random_perspective(aug_img))
+                    cv2.imwrite(augimg_path+'/'+ferplus_row[11].strip() + '_augment-hsv-ud_' + ferplus_row[1].strip(), np.flipud(aug_img))
+                    cv2.imwrite(augimg_path+'/'+ferplus_row[11].strip() + '_augment-hsv_' + ferplus_row[1].strip(), aug_img)
+                    cv2.imwrite(augimg_path+'/'+ferplus_row[11].strip() + '_augment-hsv-lr_' + ferplus_row[1].strip(), np.fliplr(aug_img))
                 if augments == 2 and row[2] == 'Training':
-                    if int(ferplus_row[12].strip())==6 or int(ferplus_row[12].strip())==8:
+                    if int(ferplus_row[11].strip())==6 or int(ferplus_row[11].strip())==8:
                         aug_img = albumentations(image)
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_ud_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_ud_' + ferplus_row[1].strip(),
                             np.flipud(aug_img))
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_lr_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_lr_' + ferplus_row[1].strip(),
                             np.fliplr(aug_img))
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_per_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_per_' + ferplus_row[1].strip(),
                             augment.random_perspective(aug_img))
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_udlr_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_udlr_' + ferplus_row[1].strip(),
                             np.fliplr(np.flipud(aug_img)))
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_udper_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_udper_' + ferplus_row[1].strip(),
                             augment.random_perspective(np.flipud(aug_img)))
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_lrper_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_lrper_' + ferplus_row[1].strip(),
                             augment.random_perspective(np.fliplr(aug_img)))
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_udlrper_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_udlrper_' + ferplus_row[1].strip(),
                             augment.random_perspective(np.fliplr(np.flipud(aug_img))))
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_perud_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_perud_' + ferplus_row[1].strip(),
                             np.flipud(augment.random_perspective(aug_img)))
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_perlr_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_perlr_' + ferplus_row[1].strip(),
                             np.fliplr(augment.random_perspective(aug_img)))
                         augment.augment_hsv(aug_img)
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_hsv_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_hsv_' + ferplus_row[1].strip(),
                             aug_img)
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_udhsv_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_udhsv_' + ferplus_row[1].strip(),
                             np.flipud(aug_img))
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_lrhsv_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_lrhsv_' + ferplus_row[1].strip(),
                             np.fliplr(aug_img))
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_perhsv_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_perhsv_' + ferplus_row[1].strip(),
                             augment.random_perspective(aug_img))
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_udlrperhsv_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_udlrperhsv_' + ferplus_row[1].strip(),
                             augment.random_perspective(np.fliplr(np.flipud(aug_img))))
-                    elif int(ferplus_row[12].strip())==7:
+                    elif int(ferplus_row[11].strip())==7:
                         aug_img = albumentations(image)
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_ud_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_ud_' + ferplus_row[1].strip(),
                             np.flipud(aug_img))
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_lr_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_lr_' + ferplus_row[1].strip(),
                             np.fliplr(aug_img))
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_per_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_per_' + ferplus_row[1].strip(),
                             augment.random_perspective(aug_img))
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_udlr_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_udlr_' + ferplus_row[1].strip(),
                             np.fliplr(np.flipud(aug_img)))
                         augment.augment_hsv(aug_img)
                         cv2.imwrite(
-                            augimg_path + '/' + ferplus_row[12].strip() + '_hsv_' + ferplus_row[1].strip(),
+                            augimg_path + '/' + ferplus_row[11].strip() + '_hsv_' + ferplus_row[1].strip(),
                             aug_img)
 
             index += 1

@@ -39,7 +39,7 @@ log2 = get_logger('log2', './model/weight/pltdata.txt', logging.DEBUG)
 
 
 def one_hot(x, class_count):
-    return torch.eye(class_count)[x, :]
+    return torch.eye(class_count, device=device)[x, :]
 
 
 class FerDataset(torch.utils.data.Dataset):
@@ -74,7 +74,7 @@ class FerDataset(torch.utils.data.Dataset):
 
         b, g, r = cv2.split(image)
         image = cv2.merge([r, g, b])
-        label = int(self.img[idx].split('_')[0]) - 1
+        label = int(self.img[idx].split('_')[0])
         if self.transform:
             image = Image.fromarray(image)
             image = self.transform(image)
@@ -83,7 +83,6 @@ class FerDataset(torch.utils.data.Dataset):
             label = one_hot(label, 8)
         else:
             label = torch.from_numpy(np.array([label]))
-
         return image, label
 
 
@@ -162,14 +161,17 @@ def main():
                                     std=[0.229, 0.224, 0.225])
                                 ])
     # training_data,test_data = getCKplus(transform)
+    print("Setting up datasets\n")
     training_data = FerDataset(train=0, transform=transform)
     test_data = FerDataset(train=2, transform=transform)
     train_loader = DataLoader(training_data, batch_size=32, shuffle=True, num_workers=4)
     test_loader = DataLoader(test_data, batch_size=32, shuffle=False, num_workers=4)
     # define network
+    print("Defining network\n")
     FER_VT = model.FERVT.FERVT(device)
     # define loss and optimize
     # loss = LabelSmoothingLoss(8, 0.1)
+    print("Setting up training tools / parameters")
     loss = torch.nn.CrossEntropyLoss()
     epochs = 100
     optimizer = torch.optim.AdamW(FER_VT.parameters(), lr=0.001)
