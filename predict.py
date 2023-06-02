@@ -148,6 +148,7 @@ def analysis(
         # cv2.namedWindow('img', cv2.WINDOW_FREERATIO)
         # cv2.setWindowProperty('img', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
+        #TODO: use cap data before while loop to prevent crash when img is None
         resolution_x = img.shape[1]
         resolution_y = img.shape[0]
 
