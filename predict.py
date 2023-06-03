@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import cv2
 from deepface import DeepFace
-from deepface.commons import functions
 import csv
 import sys, getopt
 from hsemotion.facial_emotions import HSEmotionRecognizer
@@ -17,7 +16,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 offset = 0
 target_size = (224, 224)
 detector = RetinaFace(gpu_id=0)
-batch_size = 16
+batch_size = 8
 
 # pylint: disable=too-many-nested-blocks
 
@@ -74,10 +73,6 @@ def analysis(
             DeepFace.build_model(model_name="Emotion")
             print("Emotion model is just built")
     # visualization
-    freeze = False
-    face_detected = False
-    face_included_frames = 0  # freeze screen if face detected sequantially 5 frames
-    freezed_frame = 0
     start = time.time()
 
     source = dir + "/" + file
@@ -366,14 +361,6 @@ def analysis(
             # if val != 'eof' and audio_frame is not None:
             #     #audio
             #     img, t = audio_frame
-
-        if(not(face_detected) and not(fromStorage)):
-                writer.writerow([0,0,0,0, 0, 0, 0, 0, 0, 0, 0, "None"])
-
-        face_detected = False
-        face_included_frames = 0
-        freeze = False
-        freezed_frame = 0
 
         waitTime = int(framewaittime)- int(1000*(time.time()-start) + 0.5)
         if waitTime < 1:
