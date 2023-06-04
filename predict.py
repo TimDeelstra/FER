@@ -8,6 +8,7 @@ import csv
 import sys, getopt
 from hsemotion.facial_emotions import HSEmotionRecognizer
 from batch_face import RetinaFace
+from rmn import RMN
 #from ffpyplayer.player import MediaPlayer
 
 # dependency configuration
@@ -202,7 +203,32 @@ def analysis(
                     except:  # to avoid exception if no face detected
                         print("EXCEPTION")
                         demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+            if(model_name == "ResMaskingNet"):
+                faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
+                #print(time.time()-start)
+                for i in range(fromStorage+1, batch_size):
+                    try:
+                        box, landmarks, score = faces[i][0]
+                        if score > 0.9:
+                            rect, face, img = face_detector(box, frames[i])
+                            if np.sum([face]) != 0.0:
+                                (
+                                    label,
+                                    _,
+                                    scores,
+                                ) = RMN.detect_emotion_for_single_face_image(face)
+                                #print(scores)
+                                demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
+
+                            else:
+                                demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                        else:
+                            demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                    except:  # to avoid exception if no face detected
+                        print("EXCEPTION")
+                        demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
             
+
         for i in range(fromStorage+1, len(demographies)):
             demography = demographies[i]
             emotion = demography['emotion']
@@ -377,6 +403,7 @@ def analysis(
 models = [
   "VGG-Face",
   "enet_b0_8_best_afew"
+  "ResMaskingNet"
 ]
 
 backends = [
@@ -421,6 +448,9 @@ if __name__ == "__main__":
 
     if model_int == 1:
         fer=HSEmotionRecognizer(model_name=models[model_int],device='cuda')
+    if model_int == 2:
+        m = RMN(face_detector=False)
+
 
     analysis("database", inputdir, inputfile, model_name=models[model_int], detector_backend=backends[backend_int])
     #grayscale improve speed by 10%-ish
