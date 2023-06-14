@@ -9,15 +9,33 @@ import sys, getopt
 from hsemotion.facial_emotions import HSEmotionRecognizer
 from batch_face import RetinaFace
 from rmn import RMN
-#from ffpyplayer.player import MediaPlayer
+import torch
+from POSTER_V2.models.PosterV2_7cls import *
+from POSTER_V2.models.train_func import *
+from APViT.RAF import *
+import mmcv
+from mmcv.runner import get_dist_info, init_dist, load_checkpoint
+from mmcls.models import build_classifier
+from mmcls.core import wrap_fp16_model
+from mmcls.datasets.raf import FER_CLASSES
+from mmcls.datasets.pipelines import Compose
+from sklearn.metrics import plot_confusion_matrix, confusion_matrix
+import matplotlib.pyplot as plt
+import datetime
+import torchvision.transforms as transforms
+from PIL import Image
+
 
 # dependency configuration
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 offset = 0
 target_size = (224, 224)
-detector = RetinaFace(gpu_id=0)
-batch_size = 8
+if torch.cuda.is_available():
+    detector = RetinaFace(gpu_id=0)
+else:
+    detector = RetinaFace()
+
 
 # pylint: disable=too-many-nested-blocks
 
@@ -44,7 +62,7 @@ def face_detector(box, img):
 
 
 def analysis(
-    db_path,
+    database,
     dir,
     file,
     model_name="VGG-Face",
@@ -53,7 +71,6 @@ def analysis(
     frame_threshold=1,
 ):
     # global variables
-    text_color = (255, 255, 255)
     pivot_img_size = 112  # face recognition result image
 
     enable_emotion = True
@@ -83,10 +100,10 @@ def analysis(
 
     cap = cv2.VideoCapture(source)
     fps = cap.get(cv2.CAP_PROP_FPS)
+    resolution_x = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+    resolution_y = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    print("Resolution: ", resolution_x, "x", resolution_y)
     print("FPS:" + str(fps) + "\n\n")
-
-    rtplayback = False
-    render = True
 
     framewaittime = 1
     if(rtplayback):
@@ -120,7 +137,8 @@ def analysis(
             print ("Unexpected error:", sys.exc_info()[0])
 
     while(cap.isOpened()):
-        print("fps: " + str(batch_size/(time.time()-start)))
+        if verbose:
+            print("fps: " + str(batch_size/(time.time()-start)))
         start = time.time()
 
         #LINLIN: CREATING BATCH
@@ -135,36 +153,36 @@ def analysis(
             frames.append(img)
             batch_len = batch_len + 1
         
-        if frames is []:
-            break
-
-        print(str(100*cap.get(cv2.CAP_PROP_POS_FRAMES)/cap.get(cv2.CAP_PROP_FRAME_COUNT)) + "%% completed      ", end="\n")
+        if frames == []:
+            if verbose:
+                print("No more frames, end of file.")
+            return filename
+        if verbose:
+            print(str(100*cap.get(cv2.CAP_PROP_POS_FRAMES)/cap.get(cv2.CAP_PROP_FRAME_COUNT)) + "%% completed      ", end="\n")
+        else:
+            print(str(100*cap.get(cv2.CAP_PROP_POS_FRAMES)/cap.get(cv2.CAP_PROP_FRAME_COUNT)) + "%% completed      ", end="\r")
         #audio_frame, val = player.get_frame()
-
-        # cv2.namedWindow('img', cv2.WINDOW_FREERATIO)
-        # cv2.setWindowProperty('img', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-
-        #TODO: use cap data before while loop to prevent crash when img is None
-        resolution_x = img.shape[1]
-        resolution_y = img.shape[0]
 
         fromStorage = -1
 
         demographies = []
 
+        # Try loading the model results from storage
         try:
             for img in frames:
                 data = next(reader)
-                print("frame found:" + str(reader.line_num))
+                if verbose:
+                    print("frame found:" + str(reader.line_num))
                 x, y, w, h, angry, disgust, fear, happy, sad, surprise, neutral, dominant = data
                 demography = {'emotion': {'angry': float(angry), 'disgust': float(disgust), 'fear': float(fear), 'happy': float(happy), 'sad': float(sad), 'surprise': float(surprise), 'neutral': float(neutral)}, 'dominant_emotion': dominant, 'region': {'x': int(x), 'y': int(y), 'w': int(w), 'h': int(h)}}
                 demographies.append(demography)
                 fromStorage = fromStorage + 1
-                print("frame loaded successfully")        
+                if verbose:
+                    print("frame loaded successfully")   
+        # Run the model for the frames for which we didn't find results from storage   
         except StopIteration:
             start = time.time()
             # just extract the regions to highlight in webcam
-            #gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
             if(model_name == "VGG-Face"):
                 for i in range(fromStorage+1, batch_size):
                     try:
@@ -227,7 +245,81 @@ def analysis(
                     except:  # to avoid exception if no face detected
                         print("EXCEPTION")
                         demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-            
+            if(model_name == "POSTER_V2-AN7"):
+                faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
+                for i in range(fromStorage+1, batch_size):
+                    try:
+                        box, landmarks, score = faces[i][0]
+                        if score > 0.9:
+                            rect, face, img = face_detector(box, frames[i])
+                            if np.sum([face]) != 0.0:
+                                with torch.no_grad():
+                                    img = Image.fromarray(face)
+                                    data = test_preprocess(img)
+                                    if torch.cuda.is_available():
+                                        data.cuda()
+                                    output = model(torch.unsqueeze(data, 0)).numpy()
+                                    scores = [output[0][6], output[0][5], output[0][4], output[0][1], output[0][2], output[0][3], output[0][0]]
+                                    label = FER_CLASSES[np.argmax(scores)]
+                                demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
+
+                            else:
+                                demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                        else:
+                            demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                    except:  # to avoid exception if no face detected
+                        print("EXCEPTION")
+                        demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+            if(model_name == "POSTER_V2-RAF"):
+                faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
+                for i in range(fromStorage+1, batch_size):
+                    try:
+                        box, landmarks, score = faces[i][0]
+                        if score > 0.9:
+                            rect, face, img = face_detector(box, frames[i])
+                            if np.sum([face]) != 0.0:
+                                with torch.no_grad():
+                                    img = Image.fromarray(face)
+                                    data = test_preprocess(img)
+                                    if torch.cuda.is_available():
+                                        data.cuda()
+                                    output = model(torch.unsqueeze(data, 0)).numpy()
+                                    scores = [output[0][5], output[0][2], output[0][1], output[0][3], output[0][4], output[0][0], output[0][6]]
+                                    label = FER_CLASSES[np.argmax(scores)]
+                                demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
+
+                            else:
+                                demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                        else:
+                            demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                    except:  # to avoid exception if no face detected
+                        print("EXCEPTION")
+                        demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+            if(model_name == "APViT"):
+                faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
+                for i in range(fromStorage+1, batch_size):
+                    try:
+                        box, landmarks, score = faces[i][0]
+                        if score > 0.9:
+                            rect, face, img = face_detector(box, frames[i])
+                            if np.sum([face]) != 0.0:
+                                with torch.no_grad():
+                                    data = test_preprocess(dict(img=face))
+                                    if torch.cuda.is_available():
+                                        data['img'] = data['img'][None, ...].cuda()
+                                    else:
+                                        data['img'] = data['img'][None, ...]
+                                    scores = classifier(**data, return_loss=False)[0]
+                                    label = FER_CLASSES[np.argmax(scores)]
+                                    demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[4], 'sad': scores[3], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
+
+                            else:
+                                demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                        else:
+                            demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                    except:  # to avoid exception if no face detected
+                        print("EXCEPTION")
+                        demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
 
         for i in range(fromStorage+1, len(demographies)):
             demography = demographies[i]
@@ -317,7 +409,7 @@ def analysis(
                             for index, instance in emotion_df.iterrows():
                                 current_emotion = instance["emotion"]
                                 emotion_label = f"{current_emotion} "
-                                emotion_score = instance["score"] / 100
+                                emotion_score = instance["score"] #/ 100
                                 # print(emotion_score)
 
                                 bar_x = 35  # this is the size if an emotion is 100%
@@ -402,8 +494,11 @@ def analysis(
 
 models = [
   "VGG-Face",
-  "enet_b0_8_best_afew"
-  "ResMaskingNet"
+  "enet_b0_8_best_afew",
+  "ResMaskingNet",
+  "POSTER_V2-AN7",
+  "POSTER_V2-RAF",
+  "APViT"
 ]
 
 backends = [
@@ -427,15 +522,20 @@ if __name__ == "__main__":
     inputdir = ''
     model_int = 0
     backend_int = 0
+    batch_size = 1
+    render = False
+    rtplayback = False
+    verbose = False
+    
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:],"hf:",["dir=", "file=", "model=", "backend="])
+        opts, args = getopt.getopt(sys.argv[1:],"vrphd:m:b:f:s:",["dir=", "file=", "model=", "backend=", "batch_size="])
     except getopt.GetoptError:
-        print ('test.py -d <maindir> -f <videofile> -m <model_number> -b <backend_number>')
+        print ('test.py -d <maindir> -f <videofile> -m <model_number> -b <backend_number> -s <batch_size>')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print ('test.py -d <maindir> -f <videofile> -m <model_number> -b <backend_number>')
+            print ('test.py -d <maindir> -f <videofile> -m <model_number> -b <backend_number> -s <batch_size> [-r(render), -p(realtime playback), -v(verbose)]')
             sys.exit()
         elif opt in ("-f", "--file"):
             inputfile = arg
@@ -445,12 +545,92 @@ if __name__ == "__main__":
             model_int = int(arg)
         elif opt in ("-b", "--backend"):
             backend_int = int(arg)
+        elif opt in ("-s", "--batch_size"):
+            batch_size = int(arg)
+        elif opt in ("-r"):
+            render = True
+        elif opt in ("-p"):
+            rtplayback = True
+        elif opt in ("-v"):
+            verbose = True
 
     if model_int == 1:
-        fer=HSEmotionRecognizer(model_name=models[model_int],device='cuda')
+        if torch.cuda.is_available():
+            fer=HSEmotionRecognizer(model_name=models[model_int],device='cuda')
+        else:
+            fer=HSEmotionRecognizer(model_name=models[model_int],device='cpu')
     if model_int == 2:
         m = RMN(face_detector=False)
+    if model_int == 3:
+        
+        if torch.cuda.is_available():
+            checkpoint = torch.load("POSTER_V2/affectnet-7-model_best.pth")
+        else:
+            checkpoint = torch.load("POSTER_V2/affectnet-7-model_best.pth", map_location=torch.device('cpu'))
+        model = pyramid_trans_expr2(img_size=224, num_classes=7)
+
+        model = torch.nn.DataParallel(model)
+        
+        if torch.cuda.is_available():
+            model.cuda()
+
+        model.load_state_dict(checkpoint['state_dict'])
+
+        model.eval()
+
+        test_preprocess = transforms.Compose([transforms.Resize((224, 224)),
+                                                            transforms.ToTensor(),
+                                                            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                                                 std=[0.229, 0.224, 0.225]),
+                                                            ])
+    if model_int == 4:
+        
+        if torch.cuda.is_available():
+            checkpoint = torch.load("POSTER_V2/raf-db-model_best.pth")
+        else:
+            checkpoint = torch.load("POSTER_V2/raf-db-model_best.pth", map_location=torch.device('cpu'))
+        model = pyramid_trans_expr2(img_size=224, num_classes=7)
+
+        model = torch.nn.DataParallel(model)
+        
+        if torch.cuda.is_available():
+            model.cuda()
+
+        model.load_state_dict(checkpoint['state_dict'])
+
+        model.eval()
+
+        test_preprocess = transforms.Compose([transforms.Resize((224, 224)),
+                                                            transforms.ToTensor(),
+                                                            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                                                 std=[0.229, 0.224, 0.225]),
+                                                            ])
+    if model_int == 5:
+
+        cfg = mmcv.Config.fromfile("APViT/RAF.py")
+        cfg.model.pretrained = None
+        cfg.model.extractor.pretrained = None
+        cfg.model.vit.pretrained = None
+
+        # build the model and load checkpoint
+        classifier = build_classifier(cfg.model)
+        load_checkpoint(classifier, "APViT/APViT_RAF-3eeecf7d.pth", map_location='cpu')
+
+        if torch.cuda.is_available():
+            classifier = classifier.to("cuda")
+
+        classifier.eval()
+
+        test_preprocess = Compose([
+            dict(type='Resize', size=112),
+            dict(type='Normalize',
+                mean=[123.675, 116.28, 103.53],
+                std=[58.395, 57.12, 57.375]),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(type='Collect', keys=['img',])
+        ])
 
 
-    analysis("database", inputdir, inputfile, model_name=models[model_int], detector_backend=backends[backend_int])
+    filename = analysis("database", inputdir, inputfile, model_name=models[model_int], detector_backend=backends[backend_int])
+    print("Results stored in ", filename)
     #grayscale improve speed by 10%-ish
