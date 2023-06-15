@@ -209,7 +209,7 @@ def analysis(
                 for i in range(fromStorage+1, batch_size):
                     try:
                         box, landmarks, score = faces[i][0]
-                        if score > 0.9:
+                        if score > 0.95:
                             rect, face, img = face_detector(box, frames[i])
                             if np.sum([face]) != 0.0:
                                 label,scores=fer.predict_emotions(face,logits=True)
@@ -230,7 +230,7 @@ def analysis(
                 for i in range(fromStorage+1, batch_size):
                     try:
                         box, landmarks, score = faces[i][0]
-                        if score > 0.9:
+                        if score > 0.95:
                             rect, face, img = face_detector(box, frames[i])
                             if np.sum([face]) != 0.0:
                                 (
@@ -254,7 +254,7 @@ def analysis(
                 for i in range(fromStorage+1, batch_size):
                     try:
                         box, landmarks, score = faces[i][0]
-                        if score > 0.9:
+                        if score > 0.95:
                             rect, face, img = face_detector(box, frames[i])
                             if np.sum([face]) != 0.0:
                                 with torch.no_grad():
@@ -283,7 +283,7 @@ def analysis(
                 for i in range(fromStorage+1, batch_size):
                     try:
                         box, landmarks, score = faces[i][0]
-                        if score > 0.9:
+                        if score > 0.95:
                             rect, face, img = face_detector(box, frames[i])
                             if np.sum([face]) != 0.0:
                                 with torch.no_grad():
@@ -312,7 +312,7 @@ def analysis(
                 for i in range(fromStorage+1, batch_size):
                     try:
                         box, landmarks, score = faces[i][0]
-                        if score > 0.9:
+                        if score > 0.95:
                             rect, face, img = face_detector(box, frames[i])
                             if np.sum([face]) != 0.0:
                                 with torch.no_grad():

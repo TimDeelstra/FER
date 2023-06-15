@@ -30,7 +30,7 @@ while True:
     try:
         data = next(reader)
         id, participant_id, timestamp, session, predicted_error_type = data
-        if(int(session) < 3 and predicted_error_type == "robot"):
+        if(not((participant_id, session) in ids) and int(session) < 3 and predicted_error_type == "robot"):
             f1 = [i for i in filter if str(participant_id) in i]
             f2 = [i for i in f1 if "Sessie"+str(session) in i or "sessie"+str(session) in i]
             print(f2)
@@ -38,8 +38,8 @@ while True:
 
             for m in [3,5]:
                 for file in f2:
-                    print(["python", "predict.py", "-m" , str(m), "-b", "4", "-d", sys.argv[2], "-f", file, "-s", "8", "-v"])
-                    subprocess.run(["python", "predict.py", "-m" , str(m), "-b", "4", "-d", sys.argv[2], "-f", file, "-s", "8", "-v"])
+                    print(["python", "predict.py", "-m" , str(m), "-b", "4", "-d", sys.argv[2], "-f", file, "-s", "8"])
+                    subprocess.run(["python", "predict.py", "-m" , str(m), "-b", "4", "-d", sys.argv[2], "-f", file, "-s", "8"])
             ids.add((participant_id, session))
     except:
         break
