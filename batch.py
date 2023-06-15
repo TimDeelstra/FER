@@ -29,7 +29,8 @@ while True:
         id, participant_id, timestamp, session, predicted_error_type = data
         if(int(session) < 3 and predicted_error_type == "robot"):
             f1 = [i for i in filter if str(participant_id) in i]
-            f2 = [i for i in f1 if "Sessie1" in i or "sessie1" in i]
+            f2 = [i for i in f1 if "Sessie"+str(session) in i or "sessie"+str(session) in i]
+            print(f2)
             # f2 = filter
 
             for m in [3,4,5]:
