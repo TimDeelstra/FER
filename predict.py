@@ -118,12 +118,13 @@ def analysis(
         # Create data directory
         path = os.getcwd() + "/data"
         filename = file.split("/")[-1] + "." + model_name + "." + detector_backend + ".csv"
-        try:
-            for d in file.split("/"):
+        for d in file.split("/")[:-1]:
+            try:
+                path += "/" + d
                 os.mkdir(path)
-                path += "/".join(d)
-        except OSError as error: 
-            print(error)  
+            except OSError as error:
+                if verbose:
+                    print(error)  
         
         # Open data file in read/write
         try:
@@ -198,7 +199,8 @@ def analysis(
                         #print(demography)
                         demographies.append(demography)
                     except:  # to avoid exception if no face detected
-                        print("EXCEPTION")
+                        if verbose:
+                            print("No face detected")
                         demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
             # print(time.time()-start)
             if(model_name == "enet_b0_8_best_afew"):
@@ -219,7 +221,8 @@ def analysis(
                         else:
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                     except:  # to avoid exception if no face detected
-                        print("EXCEPTION")
+                        if verbose:
+                            print("No face detected")
                         demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
             if(model_name == "ResMaskingNet"):
                 faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
@@ -243,7 +246,8 @@ def analysis(
                         else:
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                     except:  # to avoid exception if no face detected
-                        print("EXCEPTION")
+                        if verbose:
+                            print("No face detected")
                         demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
             if(model_name == "POSTER_V2-AN7"):
                 faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
@@ -268,7 +272,8 @@ def analysis(
                         else:
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                     except:  # to avoid exception if no face detected
-                        print("EXCEPTION")
+                        if verbose:
+                            print("No face detected")
                         demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
             if(model_name == "POSTER_V2-RAF"):
                 faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
@@ -293,7 +298,8 @@ def analysis(
                         else:
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                     except:  # to avoid exception if no face detected
-                        print("EXCEPTION")
+                        if verbose:
+                            print("No face detected")
                         demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
             if(model_name == "APViT"):
                 faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
@@ -318,7 +324,8 @@ def analysis(
                         else:
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                     except:  # to avoid exception if no face detected
-                        print("EXCEPTION")
+                        if verbose:
+                            print("No face detected")
                         demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
 
         for i in range(fromStorage+1, len(demographies)):
