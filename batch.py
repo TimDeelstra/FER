@@ -10,6 +10,9 @@ next(reader)
 ids = set()
 
 result = []
+path = sys.argv[2]
+if (path[-1] == "/"):
+    path = path[:-1]
 
 for root, dir, files in os.walk(sys.argv[2], followlinks=True):
     for file in files:
@@ -18,7 +21,7 @@ for root, dir, files in os.walk(sys.argv[2], followlinks=True):
 filter = []
 for x in result:
     if(x[-3:] in ["mp4", "MP4"]):
-        filter.append(x[len(sys.argv[2])+1:])
+        filter.append(x[len(sys.argv[2]):])
 
 print("MP4 files found:")
 print(filter)
@@ -33,10 +36,10 @@ while True:
             print(f2)
             # f2 = filter
 
-            for m in [3,4,5]:
+            for m in [3,5]:
                 for file in f2:
-                    print(["python", "predict.py", "-m" , str(m), "-b", "4", "-d", sys.argv[2], "-f", file, "-s", "8"])
-                    subprocess.run(["python", "predict.py", "-m" , str(m), "-b", "4", "-d", sys.argv[2], "-f", file, "-s", "8"])
+                    print(["python", "predict.py", "-m" , str(m), "-b", "4", "-d", sys.argv[2], "-f", file, "-s", "8", "-v"])
+                    subprocess.run(["python", "predict.py", "-m" , str(m), "-b", "4", "-d", sys.argv[2], "-f", file, "-s", "8", "-v"])
             ids.add((participant_id, session))
     except:
         break
