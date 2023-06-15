@@ -44,4 +44,7 @@ while True:
     except:
         break
 
-print("Total count of robot errors: ", len(ids))
+subprocess.run(["git", "add", "data/"])
+subprocess.run(["git", "commit", "-m", "\"Added new data from batch execution\""])
+subprocess.run(["git", "push"])
+print("Total count of robot errors processed: ", len(ids))
