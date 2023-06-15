@@ -262,7 +262,10 @@ def analysis(
                                     data = test_preprocess(img)
                                     if torch.cuda.is_available():
                                         data.cuda()
-                                    output = model(torch.unsqueeze(data, 0)).numpy()
+                                    output = model(torch.unsqueeze(data, 0))
+                                    if torch.cuda.is_available():
+                                        output = output.cpu()
+                                    output = output.numpy()
                                     scores = [output[0][6], output[0][5], output[0][4], output[0][1], output[0][2], output[0][3], output[0][0]]
                                     label = FER_CLASSES[np.argmax(scores)]
                                 demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
@@ -271,7 +274,7 @@ def analysis(
                                 demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                         else:
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-                    except:  # to avoid exception if no face detected
+                    except IndexError:  # to catch exception when no face detected
                         if verbose:
                             print("No face detected")
                         demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
@@ -288,7 +291,10 @@ def analysis(
                                     data = test_preprocess(img)
                                     if torch.cuda.is_available():
                                         data.cuda()
-                                    output = model(torch.unsqueeze(data, 0)).numpy()
+                                    output = model(torch.unsqueeze(data, 0))
+                                    if torch.cuda.is_available():
+                                        output = output.cpu()
+                                    output = output.numpy()
                                     scores = [output[0][5], output[0][2], output[0][1], output[0][3], output[0][4], output[0][0], output[0][6]]
                                     label = FER_CLASSES[np.argmax(scores)]
                                 demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
@@ -297,7 +303,7 @@ def analysis(
                                 demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                         else:
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-                    except:  # to avoid exception if no face detected
+                    except IndexError:  # to catch exception when no face detected
                         if verbose:
                             print("No face detected")
                         demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
@@ -323,7 +329,7 @@ def analysis(
                                 demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                         else:
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-                    except:  # to avoid exception if no face detected
+                    except IndexError:  # to catch exception when no face detected
                         if verbose:
                             print("No face detected")
                         demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
