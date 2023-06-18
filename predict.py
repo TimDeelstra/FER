@@ -100,10 +100,15 @@ def analysis(
 
     cap = cv2.VideoCapture(source)
     fps = cap.get(cv2.CAP_PROP_FPS)
+    v_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     resolution_x = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
     resolution_y = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    num_lines = 0
+    
     print("Resolution: ", resolution_x, "x", resolution_y)
+    print("Framecount: ", str(v_length))
     print("FPS:" + str(fps) + "\n\n")
+    
 
     framewaittime = 1
     if(rtplayback):
@@ -132,374 +137,381 @@ def analysis(
             f.seek(0)
             reader = csv.reader(f)
             writer = csv.writer(f)
+            num_lines = sum(1 for _ in f)
         except IOError as e:
             print ("I/O error({0}): {1}".format(e.errno, e.strerror))
+            exit(1)
         except: #handle other exceptions such as attribute errors
             print ("Unexpected error:", sys.exc_info()[0])
+            exit(1)
 
-    while(cap.isOpened()):
-        if verbose:
-            print("fps: " + str(batch_size/(time.time()-start)))
-        start = time.time()
-
-        #LINLIN: CREATING BATCH
-        batch_len = 0
-        frames = []
-        while batch_len < batch_size:
-            _, img = cap.read()
-
-            if img is None:
-                break
-
-            frames.append(img)
-            batch_len = batch_len + 1
-        
-        if frames == []:
+    if(num_lines < v_length):
+        while(cap.isOpened()):
             if verbose:
-                print("No more frames, end of file.")
-            return filename
-        if verbose:
-            print(str(100*cap.get(cv2.CAP_PROP_POS_FRAMES)/cap.get(cv2.CAP_PROP_FRAME_COUNT)) + "%% completed      ", end="\n")
-        else:
-            print(str(100*cap.get(cv2.CAP_PROP_POS_FRAMES)/cap.get(cv2.CAP_PROP_FRAME_COUNT)) + "%% completed      ", end="\r")
-        #audio_frame, val = player.get_frame()
-
-        fromStorage = -1
-
-        demographies = []
-
-        # Try loading the model results from storage
-        try:
-            for img in frames:
-                data = next(reader)
-                if verbose:
-                    print("frame found:" + str(reader.line_num))
-                x, y, w, h, angry, disgust, fear, happy, sad, surprise, neutral, dominant = data
-                demography = {'emotion': {'angry': float(angry), 'disgust': float(disgust), 'fear': float(fear), 'happy': float(happy), 'sad': float(sad), 'surprise': float(surprise), 'neutral': float(neutral)}, 'dominant_emotion': dominant, 'region': {'x': int(x), 'y': int(y), 'w': int(w), 'h': int(h)}}
-                demographies.append(demography)
-                fromStorage = fromStorage + 1
-                if verbose:
-                    print("frame loaded successfully")   
-        # Run the model for the frames for which we didn't find results from storage   
-        except StopIteration:
+                print("fps: " + str(batch_size/(time.time()-start)))
             start = time.time()
-            # just extract the regions to highlight in webcam
-            if(model_name == "VGG-Face"):
-                for i in range(fromStorage+1, batch_size):
-                    try:
-                        img = frames[i]
-                        demography = DeepFace.analyze(
-                                        img_path=img,
-                                        detector_backend=detector_backend,
-                                        enforce_detection=False,
-                                        silent=True,
-                                        actions="emotion",
-                                        align=True
-                                    )
-                        #print(demography)
-                        demographies.append(demography)
-                    except:  # to avoid exception if no face detected
-                        if verbose:
-                            print("No face detected")
-                        demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-            # print(time.time()-start)
-            if(model_name == "enet_b0_8_best_afew"):
-                faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
-                #print(time.time()-start)
-                for i in range(fromStorage+1, batch_size):
-                    try:
-                        box, landmarks, score = faces[i][0]
-                        if score > 0.95:
-                            rect, face, img = face_detector(box, frames[i])
-                            if np.sum([face]) != 0.0:
-                                label,scores=fer.predict_emotions(face,logits=True)
-                                #print(scores)
-                                demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
 
+            #LINLIN: CREATING BATCH
+            batch_len = 0
+            frames = []
+            while batch_len < batch_size:
+                _, img = cap.read()
+
+                if img is None:
+                    break
+
+                frames.append(img)
+                batch_len = batch_len + 1
+            
+            if frames == []:
+                if verbose:
+                    print("No more frames, end of file.")
+                    print("Results stored in ", filename)
+                break
+            if verbose:
+                print(str(100*cap.get(cv2.CAP_PROP_POS_FRAMES)/cap.get(cv2.CAP_PROP_FRAME_COUNT)) + "%% completed      ", end="\n")
+            else:
+                print(str(100*cap.get(cv2.CAP_PROP_POS_FRAMES)/cap.get(cv2.CAP_PROP_FRAME_COUNT)) + "%% completed      ", end="\r")
+            #audio_frame, val = player.get_frame()
+
+            fromStorage = -1
+
+            demographies = []
+
+            # Try loading the model results from storage
+            try:
+                for img in frames:
+                    data = next(reader)
+                    if verbose:
+                        print("frame found:" + str(reader.line_num))
+                    x, y, w, h, angry, disgust, fear, happy, sad, surprise, neutral, dominant = data
+                    demography = {'emotion': {'angry': float(angry), 'disgust': float(disgust), 'fear': float(fear), 'happy': float(happy), 'sad': float(sad), 'surprise': float(surprise), 'neutral': float(neutral)}, 'dominant_emotion': dominant, 'region': {'x': int(x), 'y': int(y), 'w': int(w), 'h': int(h)}}
+                    demographies.append(demography)
+                    fromStorage = fromStorage + 1
+                    if verbose:
+                        print("frame loaded successfully")   
+            # Run the model for the frames for which we didn't find results from storage   
+            except StopIteration:
+                start = time.time()
+                # just extract the regions to highlight in webcam
+                if(model_name == "VGG-Face"):
+                    for i in range(fromStorage+1, batch_size):
+                        try:
+                            img = frames[i]
+                            demography = DeepFace.analyze(
+                                            img_path=img,
+                                            detector_backend=detector_backend,
+                                            enforce_detection=False,
+                                            silent=True,
+                                            actions="emotion",
+                                            align=True
+                                        )
+                            #print(demography)
+                            demographies.append(demography)
+                        except:  # to avoid exception if no face detected
+                            if verbose:
+                                print("No face detected")
+                            demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                # print(time.time()-start)
+                if(model_name == "enet_b0_8_best_afew"):
+                    faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
+                    #print(time.time()-start)
+                    for i in range(fromStorage+1, batch_size):
+                        try:
+                            box, landmarks, score = faces[i][0]
+                            if score > 0.95:
+                                rect, face, img = face_detector(box, frames[i])
+                                if np.sum([face]) != 0.0:
+                                    label,scores=fer.predict_emotions(face,logits=True)
+                                    #print(scores)
+                                    demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
+
+                                else:
+                                    demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                             else:
                                 demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-                        else:
+                        except:  # to avoid exception if no face detected
+                            if verbose:
+                                print("No face detected")
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-                    except:  # to avoid exception if no face detected
-                        if verbose:
-                            print("No face detected")
-                        demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-            if(model_name == "ResMaskingNet"):
-                faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
-                #print(time.time()-start)
-                for i in range(fromStorage+1, batch_size):
-                    try:
-                        box, landmarks, score = faces[i][0]
-                        if score > 0.95:
-                            rect, face, img = face_detector(box, frames[i])
-                            if np.sum([face]) != 0.0:
-                                (
-                                    label,
-                                    _,
-                                    scores,
-                                ) = RMN.detect_emotion_for_single_face_image(face)
-                                #print(scores)
-                                demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
+                if(model_name == "ResMaskingNet"):
+                    faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
+                    #print(time.time()-start)
+                    for i in range(fromStorage+1, batch_size):
+                        try:
+                            box, landmarks, score = faces[i][0]
+                            if score > 0.95:
+                                rect, face, img = face_detector(box, frames[i])
+                                if np.sum([face]) != 0.0:
+                                    (
+                                        label,
+                                        _,
+                                        scores,
+                                    ) = RMN.detect_emotion_for_single_face_image(face)
+                                    #print(scores)
+                                    demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
 
+                                else:
+                                    demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                             else:
                                 demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-                        else:
+                        except:  # to avoid exception if no face detected
+                            if verbose:
+                                print("No face detected")
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-                    except:  # to avoid exception if no face detected
-                        if verbose:
-                            print("No face detected")
-                        demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-            if(model_name == "POSTER_V2-AN7"):
-                faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
-                for i in range(fromStorage+1, batch_size):
-                    try:
-                        box, landmarks, score = faces[i][0]
-                        if score > 0.95:
-                            rect, face, img = face_detector(box, frames[i])
-                            if np.sum([face]) != 0.0:
-                                with torch.no_grad():
-                                    img = Image.fromarray(face)
-                                    data = test_preprocess(img)
-                                    if torch.cuda.is_available():
-                                        data.cuda()
-                                    output = model(torch.unsqueeze(data, 0))
-                                    if torch.cuda.is_available():
-                                        output = output.cpu()
-                                    output = output.numpy()
-                                    scores = [output[0][6], output[0][5], output[0][4], output[0][1], output[0][2], output[0][3], output[0][0]]
-                                    label = FER_CLASSES[np.argmax(scores)]
-                                demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
+                if(model_name == "POSTER_V2-AN7"):
+                    faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
+                    for i in range(fromStorage+1, batch_size):
+                        try:
+                            box, landmarks, score = faces[i][0]
+                            if score > 0.95:
+                                rect, face, img = face_detector(box, frames[i])
+                                if np.sum([face]) != 0.0:
+                                    with torch.no_grad():
+                                        img = Image.fromarray(face)
+                                        data = test_preprocess(img)
+                                        if torch.cuda.is_available():
+                                            data.cuda()
+                                        output = model(torch.unsqueeze(data, 0))
+                                        if torch.cuda.is_available():
+                                            output = output.cpu()
+                                        output = output.numpy()
+                                        scores = [output[0][6], output[0][5], output[0][4], output[0][1], output[0][2], output[0][3], output[0][0]]
+                                        label = FER_CLASSES[np.argmax(scores)]
+                                    demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
 
+                                else:
+                                    demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                             else:
                                 demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-                        else:
+                        except IndexError:  # to catch exception when no face detected
+                            if verbose:
+                                print("No face detected")
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-                    except IndexError:  # to catch exception when no face detected
-                        if verbose:
-                            print("No face detected")
-                        demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-            if(model_name == "POSTER_V2-RAF"):
-                faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
-                for i in range(fromStorage+1, batch_size):
-                    try:
-                        box, landmarks, score = faces[i][0]
-                        if score > 0.95:
-                            rect, face, img = face_detector(box, frames[i])
-                            if np.sum([face]) != 0.0:
-                                with torch.no_grad():
-                                    img = Image.fromarray(face)
-                                    data = test_preprocess(img)
-                                    if torch.cuda.is_available():
-                                        data.cuda()
-                                    output = model(torch.unsqueeze(data, 0))
-                                    if torch.cuda.is_available():
-                                        output = output.cpu()
-                                    output = output.numpy()
-                                    scores = [output[0][5], output[0][2], output[0][1], output[0][3], output[0][4], output[0][0], output[0][6]]
-                                    label = FER_CLASSES[np.argmax(scores)]
-                                demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
+                if(model_name == "POSTER_V2-RAF"):
+                    faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
+                    for i in range(fromStorage+1, batch_size):
+                        try:
+                            box, landmarks, score = faces[i][0]
+                            if score > 0.95:
+                                rect, face, img = face_detector(box, frames[i])
+                                if np.sum([face]) != 0.0:
+                                    with torch.no_grad():
+                                        img = Image.fromarray(face)
+                                        data = test_preprocess(img)
+                                        if torch.cuda.is_available():
+                                            data.cuda()
+                                        output = model(torch.unsqueeze(data, 0))
+                                        if torch.cuda.is_available():
+                                            output = output.cpu()
+                                        output = output.numpy()
+                                        scores = [output[0][5], output[0][2], output[0][1], output[0][3], output[0][4], output[0][0], output[0][6]]
+                                        label = FER_CLASSES[np.argmax(scores)]
+                                    demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
 
+                                else:
+                                    demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                             else:
                                 demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-                        else:
+                        except IndexError:  # to catch exception when no face detected
+                            if verbose:
+                                print("No face detected")
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-                    except IndexError:  # to catch exception when no face detected
-                        if verbose:
-                            print("No face detected")
-                        demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-            if(model_name == "APViT"):
-                faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
-                for i in range(fromStorage+1, batch_size):
-                    try:
-                        box, landmarks, score = faces[i][0]
-                        if score > 0.95:
-                            rect, face, img = face_detector(box, frames[i])
-                            if np.sum([face]) != 0.0:
-                                with torch.no_grad():
-                                    data = test_preprocess(dict(img=face))
-                                    if torch.cuda.is_available():
-                                        data['img'] = data['img'][None, ...].cuda()
-                                    else:
-                                        data['img'] = data['img'][None, ...]
-                                    scores = classifier(**data, return_loss=False)[0]
-                                    label = FER_CLASSES[np.argmax(scores)]
-                                    demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[4], 'sad': scores[3], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
+                if(model_name == "APViT"):
+                    faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
+                    for i in range(fromStorage+1, batch_size):
+                        try:
+                            box, landmarks, score = faces[i][0]
+                            if score > 0.95:
+                                rect, face, img = face_detector(box, frames[i])
+                                if np.sum([face]) != 0.0:
+                                    with torch.no_grad():
+                                        data = test_preprocess(dict(img=face))
+                                        if torch.cuda.is_available():
+                                            data['img'] = data['img'][None, ...].cuda()
+                                        else:
+                                            data['img'] = data['img'][None, ...]
+                                        scores = classifier(**data, return_loss=False)[0]
+                                        label = FER_CLASSES[np.argmax(scores)]
+                                        demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[4], 'sad': scores[3], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
 
+                                else:
+                                    demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                             else:
                                 demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-                        else:
+                        except IndexError:  # to catch exception when no face detected
+                            if verbose:
+                                print("No face detected")
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
-                    except IndexError:  # to catch exception when no face detected
-                        if verbose:
-                            print("No face detected")
-                        demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
 
-        for i in range(fromStorage+1, len(demographies)):
-            demography = demographies[i]
-            emotion = demography['emotion']
-            region = demography['region']
-            x = region['x']
-            y = region['y']
-            w = region['w']
-            h = region['h']
-            writer.writerow([x,y,w,h, emotion['angry'], emotion['disgust'], emotion['fear'], emotion['happy'], emotion['sad'], emotion['surprise'], emotion['neutral'], demography['dominant_emotion']])
-        
-        for i in range(0, len(frames)):
+            for i in range(fromStorage+1, len(demographies)):
+                demography = demographies[i]
+                emotion = demography['emotion']
+                region = demography['region']
+                x = region['x']
+                y = region['y']
+                w = region['w']
+                h = region['h']
+                writer.writerow([x,y,w,h, emotion['angry'], emotion['disgust'], emotion['fear'], emotion['happy'], emotion['sad'], emotion['surprise'], emotion['neutral'], demography['dominant_emotion']])
+            
+            for i in range(0, len(frames)):
 
-            toc = time.time()
-            demography = demographies[i]
-            img = frames[i]
-            fa = demography["region"]
-            if int(fa['w']) > 90:
-                # here, np.uint8 handles showing white area issue
-                # freeze_img = np.zeros(resolution, np.uint8)
+                toc = time.time()
+                demography = demographies[i]
+                img = frames[i]
+                fa = demography["region"]
+                if int(fa['w']) > 90:
+                    # here, np.uint8 handles showing white area issue
+                    # freeze_img = np.zeros(resolution, np.uint8)
 
-                x = fa['x']
-                y = fa['y']
-                w = fa['w']
-                h = fa['h']
+                    x = fa['x']
+                    y = fa['y']
+                    w = fa['w']
+                    h = fa['h']
 
-                cv2.rectangle(
-                    img, (x, y), (x+w, y+h), (67, 67, 67), 1
-                )  # draw rectangle to main image
+                    cv2.rectangle(
+                        img, (x, y), (x+w, y+h), (67, 67, 67), 1
+                    )  # draw rectangle to main image
 
-                # -------------------------------
-                # extract detected face
-                # custom_face = base_img[y : y + h, x : x + w]
-                # -------------------------------
-                # facial attribute analysis
+                    # -------------------------------
+                    # extract detected face
+                    # custom_face = base_img[y : y + h, x : x + w]
+                    # -------------------------------
+                    # facial attribute analysis
 
-                if enable_face_analysis == True:
+                    if enable_face_analysis == True:
 
-                    if enable_emotion:
-                        emotion = demography["emotion"]
-                        emotion_df = pd.DataFrame(
-                            emotion.items(), columns=["emotion", "score"]
-                        )
-                        emotion_df = emotion_df.sort_values(
-                            by=["score"], ascending=False
-                        ).reset_index(drop=True)
+                        if enable_emotion:
+                            emotion = demography["emotion"]
+                            emotion_df = pd.DataFrame(
+                                emotion.items(), columns=["emotion", "score"]
+                            )
+                            emotion_df = emotion_df.sort_values(
+                                by=["score"], ascending=False
+                            ).reset_index(drop=True)
 
 
-                        # background of mood box
-                        if(render):
-                            # transparency
-                            overlay = img.copy()
-                            opacity = 0.4
-
-                            if x + w + pivot_img_size < resolution_x:
-                                # right
-                                cv2.rectangle(
-                                    img
-                                    # , (x+w,y+20)
-                                    ,
-                                    (x + w, y),
-                                    (x + w + pivot_img_size, y + h),
-                                    (64, 64, 64),
-                                    cv2.FILLED,
-                                )
-
-                                cv2.addWeighted(
-                                    overlay, opacity, img, 1 - opacity, 0, img
-                                )
-
-                            elif x - pivot_img_size > 0:
-                                # left
-                                cv2.rectangle(
-                                    img
-                                    # , (x-pivot_img_size,y+20)
-                                    ,
-                                    (x - pivot_img_size, y),
-                                    (x, y + h),
-                                    (64, 64, 64),
-                                    cv2.FILLED,
-                                )
-
-                                cv2.addWeighted(
-                                    overlay, opacity, img, 1 - opacity, 0, img
-                                )
-
-                            for index, instance in emotion_df.iterrows():
-                                current_emotion = instance["emotion"]
-                                emotion_label = f"{current_emotion} "
-                                emotion_score = instance["score"] #/ 100
-                                # print(emotion_score)
-
-                                bar_x = 35  # this is the size if an emotion is 100%
-                                bar_x = int(bar_x * emotion_score)
+                            # background of mood box
+                            if(render):
+                                # transparency
+                                overlay = img.copy()
+                                opacity = 0.4
 
                                 if x + w + pivot_img_size < resolution_x:
+                                    # right
+                                    cv2.rectangle(
+                                        img
+                                        # , (x+w,y+20)
+                                        ,
+                                        (x + w, y),
+                                        (x + w + pivot_img_size, y + h),
+                                        (64, 64, 64),
+                                        cv2.FILLED,
+                                    )
 
-                                    text_location_y = y + 20 + (index + 1) * 20
-                                    text_location_x = x + w
-
-                                    if text_location_y < y + h:
-                                        cv2.putText(
-                                            img,
-                                            emotion_label,
-                                            (text_location_x, text_location_y),
-                                            cv2.FONT_HERSHEY_SIMPLEX,
-                                            0.5,
-                                            (255, 255, 255),
-                                            1,
-                                        )
-
-                                        cv2.rectangle(
-                                            img,
-                                            (x + w + 70, y + 13 + (index + 1) * 20),
-                                            (
-                                                x + w + 70 + bar_x,
-                                                y + 13 + (index + 1) * 20 + 5,
-                                            ),
-                                            (255, 255, 255),
-                                            cv2.FILLED,
-                                        )
+                                    cv2.addWeighted(
+                                        overlay, opacity, img, 1 - opacity, 0, img
+                                    )
 
                                 elif x - pivot_img_size > 0:
+                                    # left
+                                    cv2.rectangle(
+                                        img
+                                        # , (x-pivot_img_size,y+20)
+                                        ,
+                                        (x - pivot_img_size, y),
+                                        (x, y + h),
+                                        (64, 64, 64),
+                                        cv2.FILLED,
+                                    )
 
-                                    text_location_y = y + 20 + (index + 1) * 20
-                                    text_location_x = x - pivot_img_size
+                                    cv2.addWeighted(
+                                        overlay, opacity, img, 1 - opacity, 0, img
+                                    )
 
-                                    if text_location_y <= y + h:
-                                        cv2.putText(
-                                            img,
-                                            emotion_label,
-                                            (text_location_x, text_location_y),
-                                            cv2.FONT_HERSHEY_SIMPLEX,
-                                            0.5,
-                                            (255, 255, 255),
-                                            1,
-                                        )
+                                for index, instance in emotion_df.iterrows():
+                                    current_emotion = instance["emotion"]
+                                    emotion_label = f"{current_emotion} "
+                                    emotion_score = instance["score"] #/ 100
+                                    # print(emotion_score)
 
-                                        cv2.rectangle(
-                                            img,
-                                            (
-                                                x - pivot_img_size + 70,
-                                                y + 13 + (index + 1) * 20,
-                                            ),
-                                            (
-                                                x - pivot_img_size + 70 + bar_x,
-                                                y + 13 + (index + 1) * 20 + 5,
-                                            ),
-                                            (255, 255, 255),
-                                            cv2.FILLED,
-                                        )
+                                    bar_x = 35  # this is the size if an emotion is 100%
+                                    bar_x = int(bar_x * emotion_score)
 
-            #cv2.rectangle(freeze_img, (10, 10), (90, 50), (67, 67, 67), -10)
-            if(render):
-                cv2.imshow("img", img)
+                                    if x + w + pivot_img_size < resolution_x:
 
-            # if val != 'eof' and audio_frame is not None:
-            #     #audio
-            #     img, t = audio_frame
+                                        text_location_y = y + 20 + (index + 1) * 20
+                                        text_location_x = x + w
 
-        waitTime = int(framewaittime)- int(1000*(time.time()-start) + 0.5)
-        if waitTime < 1:
-            waitTime = 1
-        if cv2.waitKey(waitTime) & 0xFF == ord("q"):  # press q to quit
-            f.close()
-            break
+                                        if text_location_y < y + h:
+                                            cv2.putText(
+                                                img,
+                                                emotion_label,
+                                                (text_location_x, text_location_y),
+                                                cv2.FONT_HERSHEY_SIMPLEX,
+                                                0.5,
+                                                (255, 255, 255),
+                                                1,
+                                            )
 
+                                            cv2.rectangle(
+                                                img,
+                                                (x + w + 70, y + 13 + (index + 1) * 20),
+                                                (
+                                                    x + w + 70 + bar_x,
+                                                    y + 13 + (index + 1) * 20 + 5,
+                                                ),
+                                                (255, 255, 255),
+                                                cv2.FILLED,
+                                            )
+
+                                    elif x - pivot_img_size > 0:
+
+                                        text_location_y = y + 20 + (index + 1) * 20
+                                        text_location_x = x - pivot_img_size
+
+                                        if text_location_y <= y + h:
+                                            cv2.putText(
+                                                img,
+                                                emotion_label,
+                                                (text_location_x, text_location_y),
+                                                cv2.FONT_HERSHEY_SIMPLEX,
+                                                0.5,
+                                                (255, 255, 255),
+                                                1,
+                                            )
+
+                                            cv2.rectangle(
+                                                img,
+                                                (
+                                                    x - pivot_img_size + 70,
+                                                    y + 13 + (index + 1) * 20,
+                                                ),
+                                                (
+                                                    x - pivot_img_size + 70 + bar_x,
+                                                    y + 13 + (index + 1) * 20 + 5,
+                                                ),
+                                                (255, 255, 255),
+                                                cv2.FILLED,
+                                            )
+
+                #cv2.rectangle(freeze_img, (10, 10), (90, 50), (67, 67, 67), -10)
+                if(render):
+                    cv2.imshow("img", img)
+
+                # if val != 'eof' and audio_frame is not None:
+                #     #audio
+                #     img, t = audio_frame
+
+            waitTime = int(framewaittime)- int(1000*(time.time()-start) + 0.5)
+            if waitTime < 1:
+                waitTime = 1
+            if cv2.waitKey(waitTime) & 0xFF == ord("q"):  # press q to quit
+                f.close()
+                break
+    
+    else:
+        print("Video has already been analyzed completely. Results are in ", filename)
     # kill open cv things
     cap.release()
     cv2.destroyAllWindows()
@@ -644,6 +656,6 @@ if __name__ == "__main__":
         ])
 
 
-    filename = analysis("database", inputdir, inputfile, model_name=models[model_int], detector_backend=backends[backend_int])
-    print("Results stored in ", filename)
+    analysis("database", inputdir, inputfile, model_name=models[model_int], detector_backend=backends[backend_int])
+    
     #grayscale improve speed by 10%-ish
