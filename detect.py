@@ -1,38 +1,43 @@
 import csv
 import sys
 import cv2
+import math
 
-#framecount to timestamp for 25fps
-def frames_to_TC (frames):
-    h = int(frames / 90000) 
-    m = int(frames / 1500) % 60 
-    s = int((frames % 1500)/25) 
-    f = frames % 1500 % 25
+#framecount to timestamp
+def frames_to_TC (frames, fr):
+    h = int(frames / (3600*fr)) 
+    m = int(frames / (60*fr)) % 60 
+    s = int((frames % (60*fr))/fr) 
+    f = int(frames % (60*fr) % fr)
     return ( "%02d:%02d:%02d:%02d" % ( h, m, s, f))
 
 f = open(sys.argv[1])
 reader = list(csv.reader(f))
 
-# video = cv2.VideoCapture(sys.argv[2])
+video = cv2.VideoCapture(sys.argv[2])
+fps = video.get(cv2.CAP_PROP_FPS)
+fc = video.get(cv2.CAP_PROP_FRAME_COUNT)
 
-# if (video.isOpened() == False): 
-#     print("Error reading video file")
 
-# frame_width = int(video.get(3))
-# frame_height = int(video.get(4))
+if (video.isOpened() == False): 
+    print("Error reading video file")
+
+frame_width = int(video.get(3))
+frame_height = int(video.get(4))
    
-# size = (frame_width, frame_height)
+size = (frame_width, frame_height)
 
 new_video = sys.argv[1][:-4] + '.avi'
 print("Creating new video containing all Surprise events: ", new_video)
 
-# result = cv2.VideoWriter(new_video, 
-            #              cv2.VideoWriter_fourcc(*'MJPG'),
-            #              10, size)
+result = cv2.VideoWriter(new_video, 
+                         cv2.VideoWriter_fourcc(*'X264'),
+                         fps, size)
 
 line_count = 0
 detect_count = 0
 repeat = 0
+cooldown = 0
 while True:
     try:
         data = reader[line_count]
@@ -42,32 +47,42 @@ while True:
         else:
             repeat = 0
 
-        if(repeat == 5):
-            print("Surprise detected at frame: ", line_count-1, " time: ", frames_to_TC(line_count-1))
+        if(repeat > 5 and cooldown == 0):
+            print("Surprise detected at frame: ", line_count-1, " time: ", frames_to_TC(line_count-1, fps))
             
+            start = line_count - (math.ceil(fps)*2)
+            if(start < 0):
+                start = 0
             # Todo: splice a video from this detection
 
-            # video.set(cv2.CAP_PROP_POS_FRAMES, line_count - 126)
-            for i in range(0,200):
-                # res, frame = video.read()
-                data = reader[line_count - 127 + i]
-                x, w, y, h, _, _, _, _, _, _, _, _ = data
-                # cv2.rectangle(
-                #     frame, (x, y), (x+w, y+h), (67, 67, 67), 1
-                # )
+            video.set(cv2.CAP_PROP_POS_FRAMES, start + 1)
+            for i in range(0,(math.ceil(fps)*4)):
+                try:
+                    res, frame = video.read()
+                    data = reader[start + i]
+                    x, y, w, h, _, _, _, _, _, _, _, _ = data
+                    cv2.rectangle(
+                        frame, (int(x), int(y)), (int(x)+int(w), int(y)+int(h)), (67, 67, 67), 1
+                    )
+                    cv2.putText(frame, str(detect_count), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255),2, cv2.LINE_AA)
 
-                # result.write(frame)
-
+                    result.write(frame)
+                except IndexError:
+                    break
+            
+            cooldown = 2*(math.ceil(fps))
             detect_count = detect_count + 1
 
+        elif(cooldown > 0):
+            cooldown = cooldown - 1 
 
         
         line_count = line_count + 1
-    except Exception as e:
+    except:
         break
 
-# video.release()
-# result.release()
+video.release()
+result.release()
 
 print(detect_count, " surprise events")
 

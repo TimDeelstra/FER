@@ -100,7 +100,7 @@ def analysis(
 
     cap = cv2.VideoCapture(source)
     fps = cap.get(cv2.CAP_PROP_FPS)
-    v_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    v_length = cap.get(cv2.CAP_PROP_FRAME_COUNT)
     resolution_x = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
     resolution_y = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
     num_lines = 0
