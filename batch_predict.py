@@ -44,6 +44,7 @@ while True:
     except:
         break
 
+subprocess.run(["git pull"])
 subprocess.run(["git", "add", "data/"])
 subprocess.run(["git", "commit", "-m", "\"Added new data from batch execution\""])
 subprocess.run(["git", "push"])
