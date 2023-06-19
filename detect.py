@@ -28,7 +28,7 @@ def detect(fcsv, fvid):
     
     size = (frame_width, frame_height)
 
-    new_video = f1[:-4] + '.avi'
+    new_video = fcsv[:-4] + '.avi'
     print("Creating new video containing all Surprise events: ", new_video)
 
     result = cv2.VideoWriter(new_video, 
