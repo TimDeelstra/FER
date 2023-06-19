@@ -14,7 +14,7 @@ path = sys.argv[2]
 if (path[-1] == "/"):
     path = path[:-1]
 
-for root, dir, files in os.walk(sys.argv[2], followlinks=True):
+for root, dir, files in os.walk(path, followlinks=True):
     for file in files:
         result.append(os.path.join(root, file))
 
