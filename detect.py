@@ -31,7 +31,7 @@ new_video = sys.argv[1][:-4] + '.avi'
 print("Creating new video containing all Surprise events: ", new_video)
 
 result = cv2.VideoWriter(new_video, 
-                         cv2.VideoWriter_fourcc(*'X264'),
+                         cv2.VideoWriter_fourcc(*'MPEG'),
                          fps, size)
 
 line_count = 0
