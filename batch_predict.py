@@ -45,7 +45,7 @@ while True:
         break
 
 subprocess.run(["git pull"])
-subprocess.run(["git", "add", "data/"])
+subprocess.run(["git", "add", "data/\*.csv"])
 subprocess.run(["git", "commit", "-m", "\"Added new data from batch execution\""])
 subprocess.run(["git", "push"])
 print("Total count of robot errors processed: ", len(ids))
