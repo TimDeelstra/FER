@@ -36,7 +36,7 @@ while True:
             print(f2)
             # f2 = filter
 
-            for m in [3,5]:
+            for m in [3,4,5]:
                 for file in f2:
                     print(["python", "predict.py", "-m" , str(m), "-b", "4", "-d", sys.argv[2], "-f", file, "-s", "8"])
                     subprocess.run(["python", "predict.py", "-m" , str(m), "-b", "4", "-d", sys.argv[2], "-f", file, "-s", "8"])
