@@ -287,7 +287,6 @@ def analysis(
                             no_face.append(True)
                             
                     if(tensor_batch):
-                        print(tensor_batch)
                         data = torch.cat(tensor_batch, 0)
                         with torch.no_grad():
                             if torch.cuda.is_available():
@@ -298,7 +297,7 @@ def analysis(
                         output = output.numpy()
                     
                     index = 0
-                    for i in range(fromStorage+1, batch_size):
+                    for i in range(0, batch_size-(fromStorage+1)):
                         if(no_face[i]):
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                         else:
@@ -343,7 +342,7 @@ def analysis(
                         output = output.numpy()
                     
                     index = 0
-                    for i in range(fromStorage+1, batch_size):
+                    for i in range(0, batch_size-(fromStorage+1)):
                         if(no_face[i]):
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                         else:
@@ -388,7 +387,7 @@ def analysis(
                                 output = output.cpu()
                     
                     index = 0
-                    for i in range(fromStorage+1, batch_size):
+                    for i in range(0, batch_size-(fromStorage+1)):
                         if(no_face[i]):
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                         else:
