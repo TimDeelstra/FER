@@ -381,10 +381,9 @@ def analysis(
                         data['img'] = torch.cat(tensor_batch, 0)
                         with torch.no_grad():
                             if torch.cuda.is_available():
-                                    data.cuda()
+                                    data['img'] = data['img'].cuda()
                             output = classifier(**data, return_loss=False)
-                            if torch.cuda.is_available():
-                                output = output.cpu()
+
                     
                     index = 0
                     for i in range(0, batch_size-(fromStorage+1)):
