@@ -121,7 +121,7 @@ def analysis(
         exit(0)
     else:
         # Create data directory
-        path = os.getcwd() + "/data"
+        path = "/mnt/v/ownCloud - Tim Deelstra@vu.data.surfsara.nl/Sorocova - Facial Expression Recognition"
         filename = file.split("/")[-1] + "." + model_name + "." + detector_backend + ".csv"
         for d in file.split("/")[:-1]:
             try:
