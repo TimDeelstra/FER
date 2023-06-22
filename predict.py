@@ -138,6 +138,7 @@ def analysis(
             reader = csv.reader(f)
             writer = csv.writer(f)
             num_lines = sum(1 for _ in f)
+            f.seek(0)
         except IOError as e:
             print ("I/O error({0}): {1}".format(e.errno, e.strerror))
             exit(1)
@@ -145,7 +146,7 @@ def analysis(
             print ("Unexpected error:", sys.exc_info()[0])
             exit(1)
 
-    if(num_lines < v_length):
+    if(num_lines < v_length or render):
         while(cap.isOpened()):
             if verbose:
                 print("fps: " + str(batch_size/(time.time()-start)))
@@ -261,88 +262,140 @@ def analysis(
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                 if(model_name == "POSTER_V2-AN7"):
                     faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
+                    tensor_batch = []
+                    no_face = []
+                    rects = []
                     for i in range(fromStorage+1, batch_size):
                         try:
-                            box, landmarks, score = faces[i][0]
+                            box, _, score = faces[i][0]
                             if score > 0.95:
-                                rect, face, img = face_detector(box, frames[i])
+                                rect, face, _ = face_detector(box, frames[i])
+                                rects.append(rect)
                                 if np.sum([face]) != 0.0:
+                                    no_face.append(False)
                                     with torch.no_grad():
                                         img = Image.fromarray(face)
                                         data = test_preprocess(img)
-                                        if torch.cuda.is_available():
-                                            data.cuda()
-                                        output = model(torch.unsqueeze(data, 0))
-                                        if torch.cuda.is_available():
-                                            output = output.cpu()
-                                        output = output.numpy()
-                                        scores = [output[0][6], output[0][5], output[0][4], output[0][1], output[0][2], output[0][3], output[0][0]]
-                                        label = FER_CLASSES[np.argmax(scores)]
-                                    demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
-
+                                        tensor_batch.append(torch.unsqueeze(data, 0))
                                 else:
-                                    demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                                    no_face.append(True)
                             else:
-                                demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                                no_face.append(True)
                         except IndexError:  # to catch exception when no face detected
                             if verbose:
                                 print("No face detected")
+                            no_face.append(True)
+                            
+                    if(tensor_batch):
+                        print(tensor_batch)
+                        data = torch.cat(tensor_batch, 0)
+                        with torch.no_grad():
+                            if torch.cuda.is_available():
+                                    data.cuda()
+                            output = model(data)
+                            if torch.cuda.is_available():
+                                output = output.cpu()
+                        output = output.numpy()
+                    
+                    index = 0
+                    for i in range(fromStorage+1, batch_size):
+                        if(no_face[i]):
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                        else:
+                            scores = [output[index][6], output[index][5], output[index][4], output[index][1], output[index][2], output[index][3], output[index][0]]
+                            label = FER_CLASSES[np.argmax(scores)]
+                            demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rects[index][0], 'y': rects[index][2], 'w': rects[index][1], 'h': rects[index][3]}})
+                            index = index + 1
+                        
                 if(model_name == "POSTER_V2-RAF"):
                     faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
+                    tensor_batch = []
+                    no_face = []
+                    rects = []
                     for i in range(fromStorage+1, batch_size):
                         try:
-                            box, landmarks, score = faces[i][0]
+                            box, _, score = faces[i][0]
                             if score > 0.95:
-                                rect, face, img = face_detector(box, frames[i])
+                                rect, face, _ = face_detector(box, frames[i])
+                                rects.append(rect)
                                 if np.sum([face]) != 0.0:
-                                    with torch.no_grad():
-                                        img = Image.fromarray(face)
-                                        data = test_preprocess(img)
-                                        if torch.cuda.is_available():
-                                            data.cuda()
-                                        output = model(torch.unsqueeze(data, 0))
-                                        if torch.cuda.is_available():
-                                            output = output.cpu()
-                                        output = output.numpy()
-                                        scores = [output[0][5], output[0][2], output[0][1], output[0][3], output[0][4], output[0][0], output[0][6]]
-                                        label = FER_CLASSES[np.argmax(scores)]
-                                    demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
-
+                                    no_face.append(False)
+                                    img = Image.fromarray(face)
+                                    data = test_preprocess(img)
+                                    tensor_batch.append(torch.unsqueeze(data, 0))
                                 else:
-                                    demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                                    no_face.append(True)
                             else:
-                                demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                                no_face.append(True)
                         except IndexError:  # to catch exception when no face detected
                             if verbose:
                                 print("No face detected")
+                            no_face.append(True)
+                            
+                    if(tensor_batch):
+                        data = torch.cat(tensor_batch, 0)
+                        with torch.no_grad():
+                            if torch.cuda.is_available():
+                                    data.cuda()
+                            output = model(data)
+                            if torch.cuda.is_available():
+                                output = output.cpu()
+                        output = output.numpy()
+                    
+                    index = 0
+                    for i in range(fromStorage+1, batch_size):
+                        if(no_face[i]):
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                        else:
+                            scores = [output[index][5], output[index][2], output[index][1], output[index][3], output[index][4], output[index][0], output[index][6]]
+                            label = FER_CLASSES[np.argmax(scores)]
+                            demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rects[index][0], 'y': rects[index][2], 'w': rects[index][1], 'h': rects[index][3]}})
+                            index = index + 1
+                            
                 if(model_name == "APViT"):
                     faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
+                    tensor_batch = []
+                    no_face = []
+                    rects = []
                     for i in range(fromStorage+1, batch_size):
                         try:
-                            box, landmarks, score = faces[i][0]
+                            box, _, score = faces[i][0]
                             if score > 0.95:
-                                rect, face, img = face_detector(box, frames[i])
+                                rect, face, _ = face_detector(box, frames[i])
+                                rects.append(rect)
                                 if np.sum([face]) != 0.0:
-                                    with torch.no_grad():
-                                        data = test_preprocess(dict(img=face))
-                                        if torch.cuda.is_available():
-                                            data['img'] = data['img'][None, ...].cuda()
-                                        else:
-                                            data['img'] = data['img'][None, ...]
-                                        scores = classifier(**data, return_loss=False)[0]
-                                        label = FER_CLASSES[np.argmax(scores)]
-                                        demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[4], 'sad': scores[3], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rect[0], 'y': rect[2], 'w': rect[1], 'h': rect[3]}})
-
+                                    no_face.append(False)
+                                    data = test_preprocess(dict(img=face))
+                                    data['img'] = data['img'][None, ...]
+                                    tensor_batch.append(data['img'])
                                 else:
-                                    demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                                    no_face.append(True)
                             else:
-                                demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                                no_face.append(True)
                         except IndexError:  # to catch exception when no face detected
                             if verbose:
                                 print("No face detected")
+                            no_face.append(True)
+
+                    if(tensor_batch):        
+                        data = dict()
+                        data['img'] = torch.cat(tensor_batch, 0)
+                        with torch.no_grad():
+                            if torch.cuda.is_available():
+                                    data.cuda()
+                            output = classifier(**data, return_loss=False)
+                            if torch.cuda.is_available():
+                                output = output.cpu()
+                    
+                    index = 0
+                    for i in range(fromStorage+1, batch_size):
+                        if(no_face[i]):
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                        else:
+                            scores = output[index]
+                            label = FER_CLASSES[np.argmax(scores)]
+                            demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rects[index][0], 'y': rects[index][2], 'w': rects[index][1], 'h': rects[index][3]}})
+                            index = index + 1
 
             for i in range(fromStorage+1, len(demographies)):
                 demography = demographies[i]
