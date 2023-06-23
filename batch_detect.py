@@ -29,7 +29,7 @@ f = open("/mnt/v/ownCloud - Tim Deelstra@vu.data.surfsara.nl/Sorocova - Facial E
 writer = csv.writer(f)
 
 for file in filter:
-    if(file == "Results.csv"):
+    if(file[0] != "S"):
         continue
     fcsv = csv_dir + "/" + file
     fvid = vid_dir + "/" + file.split(".")[:-4][0] + ".MP4"
