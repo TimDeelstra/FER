@@ -35,6 +35,7 @@ def detect(fcsv, fvid):
                             cv2.VideoWriter_fourcc(*'MPEG'),
                             fps, size)
 
+    print("treshhold: ", int(0.2*(math.ceil(fps))))
     line_count = 0
     detect_count = 0
     repeat = 0
@@ -46,9 +47,11 @@ def detect(fcsv, fvid):
             if(dominant == "Surprise"):
                 repeat = repeat + 1
             else:
+                if(cooldown == -1):
+                    cooldown = 5*(math.ceil(fps))
                 repeat = 0
 
-            if(repeat > 5 and cooldown == 0):
+            if(repeat > int(0.2*(math.ceil(fps))) and cooldown == 0):
                 print("Surprise detected at frame: ", line_count-1, " time: ", frames_to_TC(line_count-1, fps))
                 
                 start = line_count - (math.ceil(fps)*2)
@@ -71,7 +74,7 @@ def detect(fcsv, fvid):
                     except IndexError:
                         break
                 
-                cooldown = 2*(math.ceil(fps))
+                cooldown = -1    
                 detect_count = detect_count + 1
 
             elif(cooldown > 0):

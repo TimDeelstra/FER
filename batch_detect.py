@@ -25,7 +25,7 @@ for x in result:
 
 print("CSV files found:", filter)
 
-f = open("data/BETA_Sorocova (Projectfolder)/Results.csv", "w")
+f = open("/mnt/v/ownCloud - Tim Deelstra@vu.data.surfsara.nl/Sorocova - Facial Expression Recognition/BETA_Sorocova (Projectfolder)/Results.csv", "w")
 writer = csv.writer(f)
 
 for file in filter:
