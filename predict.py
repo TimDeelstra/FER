@@ -141,6 +141,7 @@ def analysis(
             f.seek(0)
         except IOError as e:
             print ("I/O error({0}): {1}".format(e.errno, e.strerror))
+            print(path + "/" + filename)
             exit(1)
         except: #handle other exceptions such as attribute errors
             print ("Unexpected error:", sys.exc_info()[0])

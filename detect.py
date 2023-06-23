@@ -19,6 +19,10 @@ def detect(fcsv, fvid):
     fps = video.get(cv2.CAP_PROP_FPS)
     fc = video.get(cv2.CAP_PROP_FRAME_COUNT)
 
+    print(fps)
+    print(fc)
+    print(fc/fps)
+
 
     if (video.isOpened() == False): 
         print("Error reading video file")
@@ -35,61 +39,59 @@ def detect(fcsv, fvid):
                             cv2.VideoWriter_fourcc(*'MPEG'),
                             fps, size)
 
-    print("treshhold: ", int(0.2*(math.ceil(fps))))
+    print("treshhold: ", (math.ceil(0.2*fps)))
     line_count = 0
     detect_count = 0
-    repeat = 0
-    cooldown = 0
+    detect_segments = []
+   
     while True:
         try:
-            data = reader[line_count]
-            _, _, _, _, _, _, _, _, _, _, _, dominant = data
-            if(dominant == "Surprise"):
-                repeat = repeat + 1
-            else:
-                if(cooldown == -1):
-                    cooldown = 5*(math.ceil(fps))
-                repeat = 0
+            repeat = 0
+            detect = False
+            for i in range(0, math.ceil(5*fps)):
+                data = reader[line_count + i]
+                _, _, _, _, _, _, _, _, _, _, _, dominant = data
+                if(dominant == "Surprise"):
+                    repeat = repeat + 1
+                else:
+                    repeat = 0
 
-            if(repeat > int(0.2*(math.ceil(fps))) and cooldown == 0):
-                print("Surprise detected at frame: ", line_count-1, " time: ", frames_to_TC(line_count-1, fps))
-                
-                start = line_count - (math.ceil(fps)*2)
-                if(start < 0):
-                    start = 0
-                # Todo: splice a video from this detection
+                if(repeat > int((math.ceil(0.2*fps))) and not(detect)):
+                    print("Surprise detected at frame: ", line_count+i+1, " time: ", frames_to_TC(line_count+i+1, fps))
+                    
+                    # Todo: splice a video from this detection
 
-                video.set(cv2.CAP_PROP_POS_FRAMES, start + 1)
-                for i in range(0,(math.ceil(fps)*4)):
-                    try:
-                        res, frame = video.read()
-                        data = reader[start + i]
-                        x, y, w, h, _, _, _, _, _, _, _, _ = data
-                        cv2.rectangle(
-                            frame, (int(x), int(y)), (int(x)+int(w), int(y)+int(h)), (67, 67, 67), 1
-                        )
-                        cv2.putText(frame, str(detect_count), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255),2, cv2.LINE_AA)
+                    video.set(cv2.CAP_PROP_POS_FRAMES, line_count + 1)
+                    for i in range(0,(math.ceil(5*fps))):
+                        try:
+                            res, frame = video.read()
+                            data = reader[line_count + i]
+                            x, y, w, h, _, _, _, _, _, _, _, _ = data
+                            cv2.rectangle(
+                                frame, (int(x), int(y)), (int(x)+int(w), int(y)+int(h)), (67, 67, 67), 1
+                            )
+                            cv2.putText(frame, "detection: " + str(detect_count), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255),2, cv2.LINE_AA)
+                            cv2.putText(frame, "timestamp: " + str(frames_to_TC(line_count+1, fps)), (50,80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255),2, cv2.LINE_AA)
 
-                        result.write(frame)
-                    except IndexError:
-                        break
-                
-                cooldown = -1    
-                detect_count = detect_count + 1
+                            result.write(frame)
+                        except IndexError:
+                            break
+                    
+                    detect = True
+                    detect_count = detect_count + 1
 
-            elif(cooldown > 0):
-                cooldown = cooldown - 1 
-
-            
-            line_count = line_count + 1
+            detect_segments.append(int(detect))  
+            line_count = line_count + math.ceil(5*fps)
         except:
+            detect_segments.append(int(detect))
             break
 
     video.release()
     result.release()
 
     print(detect_count, " surprise events")
-    return detect_count
+    detect_segments.append(detect_count)
+    return detect_segments
 
 if __name__ == "__main__":
-    detect(sys.argv[1],sys.argv[2])
+    print(detect(sys.argv[1],sys.argv[2]))

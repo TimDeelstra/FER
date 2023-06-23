@@ -40,6 +40,6 @@ for file in filter:
     model = file.split(".")[-3]
     backend = file.split(".")[-2]
     detections = detect(fcsv, fvid)
-    writer.writerow([id, sessie, model, backend, detections])
+    writer.writerow([id, sessie, model, backend] + detections)
 
 f.close()
