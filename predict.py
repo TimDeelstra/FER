@@ -123,6 +123,7 @@ def analysis(
         # Create data directory
         path = "/mnt/v/ownCloud - Tim Deelstra@vu.data.surfsara.nl/Sorocova - Facial Expression Recognition"
         filename = file.split("/")[-1] + "." + model_name + "." + detector_backend + ".csv"
+        filename_faces = file.split("/")[-1] + "." + detector_backend + ".csv"
         for d in file.split("/")[:-1]:
             try:
                 path += "/" + d
@@ -139,6 +140,12 @@ def analysis(
             writer = csv.writer(f)
             num_lines = sum(1 for _ in f)
             f.seek(0)
+
+            f2 = open(path + "/" + filename_faces, "a+")
+            f2.seek(0)
+            face_reader = csv.reader(f2)
+            face_writer = csv.writer(f2)
+
         except IOError as e:
             print ("I/O error({0}): {1}".format(e.errno, e.strerror))
             print(path + "/" + filename)
@@ -177,7 +184,9 @@ def analysis(
             #audio_frame, val = player.get_frame()
 
             fromStorage = -1
+            fromStorageFaces = -1
 
+            faces = []
             demographies = []
 
             # Try loading the model results from storage
@@ -189,11 +198,32 @@ def analysis(
                     x, y, w, h, angry, disgust, fear, happy, sad, surprise, neutral, dominant = data
                     demography = {'emotion': {'angry': float(angry), 'disgust': float(disgust), 'fear': float(fear), 'happy': float(happy), 'sad': float(sad), 'surprise': float(surprise), 'neutral': float(neutral)}, 'dominant_emotion': dominant, 'region': {'x': int(x), 'y': int(y), 'w': int(w), 'h': int(h)}}
                     demographies.append(demography)
-                    fromStorage = fromStorage + 1
+                    fromStorage += 1
+                    fromStorageFaces += 1
                     if verbose:
-                        print("frame loaded successfully")   
+                        print("frame loaded successfully")  
+                    data2 = next(face_reader)
+                    a, b, c, d = data2[:4]
+                    box = [float(a),float(b),float(c),float(d)]
+                    score = float(data2[-1])
+                    if verbose:
+                        print("Face detection found:", box, score)
+                    faces.append([(box,0,score)])
+                    fromStorageFaces +=1
             # Run the model for the frames for which we didn't find results from storage   
             except StopIteration:
+                try:
+                    for i in range(fromStorage+1, batch_size):
+                        data = next(face_reader)
+                        a, b, c, d = data[:4]
+                        box = [float(a),float(b),float(c),float(d)]
+                        score = float(data[-1])
+                        if verbose:
+                            print("Face detection found:", box, score)
+                        faces.append([(box,0,score)])
+                        fromStorageFaces +=1
+                except:
+                    pass
                 start = time.time()
                 # just extract the regions to highlight in webcam
                 if(model_name == "VGG-Face"):
@@ -262,11 +292,12 @@ def analysis(
                                 print("No face detected")
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                 if(model_name == "POSTER_V2-AN7"):
-                    faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
+                    if(fromStorageFaces+1 < len(frames)):
+                        faces = faces + detector(frames[fromStorageFaces+1:], cv=False) #LINLIN: BATCH FRAMES
                     tensor_batch = []
                     no_face = []
                     rects = []
-                    for i in range(fromStorage+1, batch_size):
+                    for i in range(fromStorage+1, len(frames)):
                         try:
                             box, _, score = faces[i][0]
                             if score > 0.95:
@@ -298,7 +329,7 @@ def analysis(
                         output = output.numpy()
                     
                     index = 0
-                    for i in range(0, batch_size-(fromStorage+1)):
+                    for i in range(0, len(frames)-(fromStorage+1)):
                         if(no_face[i]):
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                         else:
@@ -308,11 +339,12 @@ def analysis(
                             index = index + 1
                         
                 if(model_name == "POSTER_V2-RAF"):
-                    faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
+                    if(fromStorageFaces+1 < len(frames)):
+                        faces = faces + detector(frames[fromStorageFaces+1:], cv=False) #LINLIN: BATCH FRAMES
                     tensor_batch = []
                     no_face = []
                     rects = []
-                    for i in range(fromStorage+1, batch_size):
+                    for i in range(fromStorage+1, len(frames)):
                         try:
                             box, _, score = faces[i][0]
                             if score > 0.95:
@@ -343,7 +375,7 @@ def analysis(
                         output = output.numpy()
                     
                     index = 0
-                    for i in range(0, batch_size-(fromStorage+1)):
+                    for i in range(0, len(frames)-(fromStorage+1)):
                         if(no_face[i]):
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                         else:
@@ -353,11 +385,12 @@ def analysis(
                             index = index + 1
                             
                 if(model_name == "APViT"):
-                    faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
+                    if(fromStorageFaces+1 < len(frames)):
+                        faces = faces + detector(frames[fromStorageFaces+1:], cv=False) #LINLIN: BATCH FRAMES
                     tensor_batch = []
                     no_face = []
                     rects = []
-                    for i in range(fromStorage+1, batch_size):
+                    for i in range(fromStorage+1, len(frames)):
                         try:
                             box, _, score = faces[i][0]
                             if score > 0.95:
@@ -387,7 +420,7 @@ def analysis(
 
                     
                     index = 0
-                    for i in range(0, batch_size-(fromStorage+1)):
+                    for i in range(0, len(faces)-(fromStorage+1)):
                         if(no_face[i]):
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                         else:
@@ -395,6 +428,10 @@ def analysis(
                             label = FER_CLASSES[np.argmax(scores)]
                             demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rects[index][0], 'y': rects[index][2], 'w': rects[index][1], 'h': rects[index][3]}})
                             index = index + 1
+
+            for i in range(fromStorageFaces + 1, len(faces)):
+                box, _, score = faces[i][0]
+                face_writer.writerow(np.concatenate((box, [score])))
 
             for i in range(fromStorage+1, len(demographies)):
                 demography = demographies[i]
