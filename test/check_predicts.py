@@ -17,15 +17,19 @@ def check(arg1, arg2):
     counter = 0
     line_counter = 1
     for _ in range(end):
-        line = next(r1)
-        data = next(r2)
+        try:
+            line = next(r1)
+            data = next(r2)
 
-        if line[0] != data[0] or line[1] != data[1] or line[2] != data[2] or line[3] != data[3]:
-            print("Non-matching line:", line_counter)
-            print(line[:4], data[:4])
-            counter +=1
+            if line[0] != data[0] or line[1] != data[1] or line[2] != data[2] or line[3] != data[3]:
+                print("Non-matching line:", line_counter)
+                print(line[:4], data[:4])
+                counter +=1
 
-        line_counter += 1
+            line_counter += 1
+        except:
+            print("Incorrect length for one of the files")
+            break
 
     return counter
     
