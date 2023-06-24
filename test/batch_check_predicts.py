@@ -17,7 +17,7 @@ for video in sorted(result):
     f2 = video + ".POSTER_V2-RAF.retinaface.csv"
     f3 = video + ".APViT.retinaface.csv"
 
-    total.append((video,(check(f1,f2), check(f1,f3), check(f2,f3))))
+    total.append((video.split("/")[-1],(check(f1,f2), check(f1,f3), check(f2,f3))))
     print(total[-1])
 
 print(total)
