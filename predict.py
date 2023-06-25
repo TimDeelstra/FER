@@ -199,7 +199,6 @@ def analysis(
                     demography = {'emotion': {'angry': float(angry), 'disgust': float(disgust), 'fear': float(fear), 'happy': float(happy), 'sad': float(sad), 'surprise': float(surprise), 'neutral': float(neutral)}, 'dominant_emotion': dominant, 'region': {'x': int(x), 'y': int(y), 'w': int(w), 'h': int(h)}}
                     demographies.append(demography)
                     fromStorage += 1
-                    fromStorageFaces += 1
                     if verbose:
                         print("frame loaded successfully")  
                     data2 = next(face_reader)
@@ -213,7 +212,7 @@ def analysis(
             # Run the model for the frames for which we didn't find results from storage   
             except StopIteration:
                 try:
-                    for i in range(fromStorage+1, batch_size):
+                    for i in range(fromStorageFaces+1, batch_size):
                         data = next(face_reader)
                         a, b, c, d = data[:4]
                         box = [float(a),float(b),float(c),float(d)]
@@ -222,7 +221,7 @@ def analysis(
                             print("Face detection found:", box, score)
                         faces.append([(box,0,score)])
                         fromStorageFaces +=1
-                except:
+                except StopIteration:
                     pass
                 start = time.time()
                 # just extract the regions to highlight in webcam
@@ -297,6 +296,7 @@ def analysis(
                     tensor_batch = []
                     no_face = []
                     rects = []
+
                     for i in range(fromStorage+1, len(frames)):
                         try:
                             box, _, score = faces[i][0]
@@ -316,6 +316,7 @@ def analysis(
                         except IndexError:  # to catch exception when no face detected
                             if verbose:
                                 print("No face detected")
+                            faces[i] = [([0, 0, 0, 0], 0, 0)]
                             no_face.append(True)
                             
                     if(tensor_batch):
@@ -362,6 +363,7 @@ def analysis(
                         except IndexError:  # to catch exception when no face detected
                             if verbose:
                                 print("No face detected")
+                            faces[i] = [([0, 0, 0, 0], 0, 0)]
                             no_face.append(True)
                             
                     if(tensor_batch):
@@ -408,6 +410,7 @@ def analysis(
                         except IndexError:  # to catch exception when no face detected
                             if verbose:
                                 print("No face detected")
+                            faces[i] = [([0, 0, 0, 0], 0, 0)]
                             no_face.append(True)
 
                     if(tensor_batch):        
