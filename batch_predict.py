@@ -23,8 +23,8 @@ for x in result:
     if(x[-3:] in ["mp4", "MP4"]):
         filter.append(x[len(sys.argv[2]):])
 
-print("MP4 files found:")
-print(filter)
+# print("MP4 files found:")
+# print(filter)
 
 while True:
     try:
@@ -38,7 +38,7 @@ while True:
 
             for m in [3,4,5]:
                 for file in f2:
-                    print(["python", "predict.py", "-m" , str(m), "-b", "4", "-d", sys.argv[2], "-f", file, "-s", "16"])
+                    # print(["python", "predict.py", "-m" , str(m), "-b", "4", "-d", sys.argv[2], "-f", file, "-s", "16"])
                     subprocess.run(["python", "predict.py", "-m" , str(m), "-b", "4", "-d", sys.argv[2], "-f", file, "-s", "16"])
             ids.add((participant_id, session))
     except:
