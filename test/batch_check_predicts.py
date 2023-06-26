@@ -12,13 +12,15 @@ for root, dir, files in os.walk(path, followlinks=True):
             result.add(file)
 
 total = []
+
 for video in sorted(result):
     f1 = video + ".POSTER_V2-AN7.retinaface.csv"
     f2 = video + ".POSTER_V2-RAF.retinaface.csv"
     f3 = video + ".APViT.retinaface.csv"
-
-    if(check(f1,f2) != 0 or check(f1,f3) != 0 or check(f2,f3) != 0):
-        total.append((video.split("/")[-1],(check(f1,f2), check(f1,f3), check(f2,f3))))
-    
-
-print(total)
+    try:
+        if(check(f1,f2) != 0 or check(f1,f3) != 0 or check(f2,f3) != 0):
+            total.append((video.split("/")[-1],(check(f1,f2), check(f1,f3), check(f2,f3))))
+    except:
+        pass
+        
+print(sorted(total))
