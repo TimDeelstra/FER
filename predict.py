@@ -121,7 +121,8 @@ def analysis(
         exit(0)
     else:
         # Create data directory
-        path = "/mnt/v/ownCloud - Tim Deelstra@vu.data.surfsara.nl/Sorocova - Facial Expression Recognition"
+        #path = "/mnt/v/ownCloud - Tim Deelstra@vu.data.surfsara.nl/Sorocova - Facial Expression Recognition"
+        path = "data"
         filename = file.split("/")[-1] + "." + model_name + "." + detector_backend + ".csv"
         filename_faces = file.split("/")[-1] + "." + detector_backend + ".csv"
         for d in file.split("/")[:-1]:
@@ -318,7 +319,10 @@ def analysis(
                                 print("No face detected")
                             faces[i] = [([0, 0, 0, 0], 0, 0)]
                             no_face.append(True)
-                            
+
+                    for i in range(fromStorageFaces, fromStorage):
+                        faces[i] = [([0, 0, 0, 0], 0, 0)]
+
                     if(tensor_batch):
                         data = torch.cat(tensor_batch, 0)
                         with torch.no_grad():
@@ -365,7 +369,10 @@ def analysis(
                                 print("No face detected")
                             faces[i] = [([0, 0, 0, 0], 0, 0)]
                             no_face.append(True)
-                            
+
+                    for i in range(fromStorageFaces, fromStorage):
+                        faces[i] = [([0, 0, 0, 0], 0, 0)]
+                           
                     if(tensor_batch):
                         data = torch.cat(tensor_batch, 0)
                         with torch.no_grad():
@@ -413,6 +420,9 @@ def analysis(
                             faces[i] = [([0, 0, 0, 0], 0, 0)]
                             no_face.append(True)
 
+                    for i in range(fromStorageFaces, fromStorage):
+                        faces[i] = [([0, 0, 0, 0], 0, 0)]
+
                     if(tensor_batch):        
                         data = dict()
                         data['img'] = torch.cat(tensor_batch, 0)
@@ -421,7 +431,7 @@ def analysis(
                                     data['img'] = data['img'].cuda()
                             output = classifier(**data, return_loss=False)
 
-                    
+
                     index = 0
                     for i in range(0, len(faces)-(fromStorage+1)):
                         if(no_face[i]):
@@ -429,7 +439,7 @@ def analysis(
                         else:
                             scores = output[index]
                             label = FER_CLASSES[np.argmax(scores)]
-                            demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[3], 'sad': scores[4], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rects[index][0], 'y': rects[index][2], 'w': rects[index][1], 'h': rects[index][3]}})
+                            demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[4], 'sad': scores[3], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rects[index][0], 'y': rects[index][2], 'w': rects[index][1], 'h': rects[index][3]}})
                             index = index + 1
 
             for i in range(fromStorageFaces + 1, len(faces)):
