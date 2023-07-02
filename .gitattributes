@@ -1,3 +1,0 @@
-*.h5 filter=lfs diff=lfs merge=lfs -text
-*.hdf5 filter=lfs diff=lfs merge=lfs -text
-db/fer2013.csv filter=lfs diff=lfs merge=lfs -text
