@@ -40,13 +40,16 @@ for file in filter:
     print(fcsv, fvid)
     
     id = re.findall(r"\D(\d{5})\D", file)[0]
-    sessie = re.findall(r"Sessie(\s*)(\d{1})\D", file)[0]
+    sessie = re.findall(r"Sessie(\s*)(\d{1})\D", file)[0][1]
     model = file.split(".")[-3]
     backend = file.split(".")[-2]
     (detect_segments, detections) = detect(fcsv, fvid, render = bool(int(render)))
     writer.writerow([id, sessie, model, backend] + detect_segments)
     if(len(detections) <= 10):
         detections = np.array(detections)
-        grade_writer.writerows([[id, sessie, model, 'Section'] + list(detections[:,0]), ['', '', '', 'Timestamp'] + list(detections[:,1]), ['', '', '', 'Grade'] + len(detections)*['']])
-
+        if len(detections) > 0:
+            grade_writer.writerows([[id, sessie, model, 'Section'] + list(detections[:,0]), ['', '', '', 'Timestamp'] + list(detections[:,1]), ['', '', '', 'Grade'] + len(detections)*['']])
+        else:
+            grade_writer.writerows([[id, sessie, model, 'Section'], ['', '', '', 'Timestamp'], ['', '', '', 'Grade']])
+           
 f.close()
