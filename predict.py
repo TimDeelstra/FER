@@ -431,7 +431,6 @@ def analysis(
                                     data['img'] = data['img'].cuda()
                             output = classifier(**data, return_loss=False)
 
-
                     index = 0
                     for i in range(0, len(faces)-(fromStorage+1)):
                         if(no_face[i]):
