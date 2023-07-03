@@ -34,6 +34,7 @@ result = {}
 
 total_fpositive = set()
 total_tpositive = set()
+total = set()
 
 for model in models:
     result[model] = {'TP':0,'FP':0,'FN': set(), 'total':0}
@@ -46,6 +47,7 @@ for model in models:
 
             result[model]['total'] += len(data)
             for eval in data:
+                total.add((id, ses, eval[0]))
                 if(eval[1] == 'T'):
                     result[model]['TP'] += 1
                     total_tpositive.add((id, ses, eval[0]))
@@ -70,6 +72,7 @@ for model in models:
       
 print("total true positive", len(total_tpositive))
 print("total false positive", len(total_fpositive))
+print("total positives", len(total))
 
 for model in result:
     data = result[model]
