@@ -13,11 +13,65 @@ Since this Conda environment was setup for our specific system (RTX 4070, CUDA 1
 conda env create -f <environment-name>.yml
 ```
 
+## Use of Framework
+
+predict.py
+
+Run the FER model on a single video
+```
+python3 predict.py
+-d <maindir> 'the directory to store the data files'
+-f <videofile> 'the video to analyse'
+-m <model_number> 'the model to be used'
+-b <backend_number> 'the backend to be used'
+-s <batch_size> 'the amount of image to process as a batch' Default(8)
+-r(render) 'whether to display the FER predicitions on the video in a window' Optional
+-p(realtime playback) 'playback the FER predictions in realtime' Optional
+-v(verbose) 'output some additional information' Optional
+```
+
+batch_predict.py
+
+Run the prediction for model 3,4,5 on the sessions from the csv file that indicates errors
+```
+python3 batch_predict.py <error_file> <video_dir>
+<error_file> 'file containing the list of sessions and their errors'
+<video_dir> 'the directory containing the videos from these sessions'
+```
+
+detect.py
+
+Use the detection method on the predict data to convert to an event-level
+```
+python3 detect.py <predict_file> <video_file>
+<predict_file> 'the predict file'
+<video_file> 'the video corresponding to the predict file'
+```
+
+batch_detect.py
+
+Use the detection method on the predict data of a batch of videos to convert to an event-level
+```
+python3 batch_detect.py <predict_dir> <video_dir> <render>
+<predict_dir> 'directory containing the predict files'
+<video_dir> 'directory containing the videos of the predictions'
+<render> 'whether to render a compilation of the detections for each video'
+```
+
+## Models
+| Index | Model | Link |
+|---|---|---|
+| 1 | HSE | |
+| 2 | RMN  | |
+| 3 | POSTER V2 AffectNet | |
+| 4 | POSTER V2 RAF-DB | |
+| 5 | APViT | |
+
 TODO:
-- ~~Removed old Python scripts and models~~
+- ~~Remove old Python scripts and models~~
 - Remove legacy code from predict script
 - Refactor predict script, easier to trace bugs and achieve intermediate results
-- Update readme with command usage instructions
+- ~~Update readme with command usage instructions~~
 - Introduce a simple video player
 - Allow for more control (introduce input parameters for hardcoded values)
 - Introduce more options to analyse the results of each module in the pipeline.
