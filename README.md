@@ -12,3 +12,16 @@ Since this Conda environment was setup for our specific system (RTX 4070, CUDA 1
  ```
 conda env create -f <environment-name>.yml
 ```
+
+TODO:
+- Removed old Python scripts and models
+- Remove legacy code from predict script
+- Refactor predict script, easier to trace bugs and achieve intermediate results
+- Update readme with command usage instructions
+- Introduce a simple video player
+- Allow for more control (introduce input parameters for hardcoded values)
+- Introduce more options to analyse the results of each module in the pipeline.
+- Reseperate scripts into modules, introducing a more modular approach.
+
+- Rework facial image pre-processing, especially to prevent stretching the face too much.
+- Introduce alternative [SCRFD](https://github.com/deepinsight/insightface/tree/master/detection/scrfd) face detection, to drastically reduce the computational time of face detection (Retinaface detection reaches a max of 50-70 fps, while FER model can analyse 180-260 fps (not completely unexpected, since the facial images are less than 5% of the original image) while only slightly reducing performance.
