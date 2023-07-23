@@ -14,7 +14,7 @@ conda env create -f <environment-name>.yml
 ```
 
 TODO:
-- Removed old Python scripts and models
+- ~~Removed old Python scripts and models~~
 - Remove legacy code from predict script
 - Refactor predict script, easier to trace bugs and achieve intermediate results
 - Update readme with command usage instructions
