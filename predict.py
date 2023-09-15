@@ -161,7 +161,6 @@ def analysis(
                 print("fps: " + str(batch_size/(time.time()-start)))
             start = time.time()
 
-            #LINLIN: CREATING BATCH
             batch_len = 0
             frames = []
             while batch_len < batch_size:
@@ -245,8 +244,9 @@ def analysis(
                                 print("No face detected")
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
                 # print(time.time()-start)
+                
                 if(model_name == "enet_b0_8_best_afew"):
-                    faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
+                    faces = detector(frames, cv=False)
                     #print(time.time()-start)
                     for i in range(fromStorage+1, batch_size):
                         try:
@@ -266,8 +266,9 @@ def analysis(
                             if verbose:
                                 print("No face detected")
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                
                 if(model_name == "ResMaskingNet"):
-                    faces = detector(frames, cv=False) #LINLIN: BATCH FRAMES
+                    faces = detector(frames, cv=False)
                     #print(time.time()-start)
                     for i in range(fromStorage+1, batch_size):
                         try:
@@ -291,9 +292,10 @@ def analysis(
                             if verbose:
                                 print("No face detected")
                             demographies.append({'emotion': {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}, 'dominant_emotion': "None", 'region': {'x': 0, 'y': 0, 'w': 0, 'h': 0}})
+                
                 if(model_name == "POSTER_V2-AN7"):
                     if(fromStorageFaces+1 < len(frames)):
-                        faces = faces + detector(frames[fromStorageFaces+1:], cv=False) #LINLIN: BATCH FRAMES
+                        faces = faces + detector(frames[fromStorageFaces+1:], cv=False)
                     tensor_batch = []
                     no_face = []
                     rects = []
@@ -345,7 +347,7 @@ def analysis(
                         
                 if(model_name == "POSTER_V2-RAF"):
                     if(fromStorageFaces+1 < len(frames)):
-                        faces = faces + detector(frames[fromStorageFaces+1:], cv=False) #LINLIN: BATCH FRAMES
+                        faces = faces + detector(frames[fromStorageFaces+1:], cv=False)
                     tensor_batch = []
                     no_face = []
                     rects = []
@@ -395,7 +397,7 @@ def analysis(
                             
                 if(model_name == "APViT"):
                     if(fromStorageFaces+1 < len(frames)):
-                        faces = faces + detector(frames[fromStorageFaces+1:], cv=False) #LINLIN: BATCH FRAMES
+                        faces = faces + detector(frames[fromStorageFaces+1:], cv=False)
                     tensor_batch = []
                     no_face = []
                     rects = []
@@ -441,10 +443,12 @@ def analysis(
                             demographies.append({'emotion': {'angry': scores[0], 'disgust': scores[1], 'fear': scores[2], 'happy': scores[4], 'sad': scores[3], 'surprise': scores[5], 'neutral': scores[6]}, 'dominant_emotion': label, 'region': {'x': rects[index][0], 'y': rects[index][2], 'w': rects[index][1], 'h': rects[index][3]}})
                             index = index + 1
 
+            # Store face detection data
             for i in range(fromStorageFaces + 1, len(faces)):
                 box, _, score = faces[i][0]
                 face_writer.writerow(np.concatenate((box, [score])))
 
+            # Store emotion detection data
             for i in range(fromStorage+1, len(demographies)):
                 demography = demographies[i]
                 emotion = demography['emotion']
@@ -455,6 +459,7 @@ def analysis(
                 h = region['h']
                 writer.writerow([x,y,w,h, emotion['angry'], emotion['disgust'], emotion['fear'], emotion['happy'], emotion['sad'], emotion['surprise'], emotion['neutral'], demography['dominant_emotion']])
             
+            # Render the face detection and emotion data on the video
             for i in range(0, len(frames)):
 
                 toc = time.time()
@@ -657,11 +662,11 @@ if __name__ == "__main__":
     try:
         opts, args = getopt.getopt(sys.argv[1:],"vrphd:m:b:f:s:",["dir=", "file=", "model=", "backend=", "batch_size="])
     except getopt.GetoptError:
-        print ('test.py -d <maindir> -f <videofile> -m <model_number> -b <backend_number> -s <batch_size>')
+        print ('predict.py -d <maindir> -f <videofile> -m <model_number> -b <backend_number> -s <batch_size>')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print ('test.py -d <maindir> -f <videofile> -m <model_number> -b <backend_number> -s <batch_size> [-r(render), -p(realtime playback), -v(verbose)]')
+            print ('predict.py -d <maindir> -f <videofile> -m <model_number> -b <backend_number> -s <batch_size> [-r(render), -p(realtime playback), -v(verbose)]')
             sys.exit()
         elif opt in ("-f", "--file"):
             inputfile = arg
