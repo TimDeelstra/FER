@@ -58,6 +58,15 @@ python3 batch_detect.py <predict_dir> <video_dir> <render>
 <render> 'whether to render a compilation of the detections for each video'
 ```
 
+playback.py
+
+Display the emotion data on a video
+```
+python3 playback.py <video_file> <data_file>
+<video_file> 'the video file'
+<data_file> 'the file containing the emotion data
+```
+
 ## Models
 | Index | Model |
 |---|---|
