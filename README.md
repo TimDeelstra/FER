@@ -59,13 +59,13 @@ python3 batch_detect.py <predict_dir> <video_dir> <render>
 ```
 
 ## Models
-| Index | Model | Link |
-|---|---|---|
-| 1 | HSE | |
-| 2 | RMN  | |
-| 3 | POSTER V2 AffectNet | |
-| 4 | POSTER V2 RAF-DB | |
-| 5 | APViT | |
+| Index | Model |
+|---|---|
+| 1 | [HSE](https://github.com/HSE-asavchenko/face-emotion-recognition) |
+| 2 | [RMN](https://pypi.org/project/rmn/) |
+| 3 | [POSTER V2 AffectNet](https://github.com/Talented-Q/POSTER_V2) |
+| 4 | [POSTER V2 RAF-DB](https://github.com/Talented-Q/POSTER_V2) |
+| 5 | [APViT](https://github.com/youqingxiaozhua/APViT) |
 
 TODO:
 - ~~Remove old Python scripts and models~~
